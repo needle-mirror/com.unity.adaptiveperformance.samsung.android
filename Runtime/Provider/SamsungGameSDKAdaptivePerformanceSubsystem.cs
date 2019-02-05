@@ -416,7 +416,8 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             // the warning callback is not called as it's not available yet. We need to set it manually based on temperature as workaround.
             // On startup the temperature reading is always 0. After a couple of seconds a true value is returned. Therefore we wait for 2 seconds before we make the reading.
             Sleep(TimeSpan.FromSeconds(2));
-            float currentTempLevel = GetSkinTempLevel();
+            // 1.5 does not have skin temp
+            float currentTempLevel = (m_SkinTemp == null) ? (float)m_Api.GetPSTLevel() : GetSkinTempLevel();
 
             if (currentTempLevel >= 7)
                 OnPerformanceWarning(WarningLevel.Throttling);

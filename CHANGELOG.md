@@ -4,10 +4,15 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.2.2] - 2019-02-05
+
+### Changed
+- Fix issues where skin temperature was used on Game SDK 1.5 devices instead of PST to send initial temperature warning when devices are hot. 
+
 ## [1.2.1] - 2019-08-21
 
 ### Changed
-- Update to correct Unity Version (2019.4) and correct dependency to Adaptive Performance (1.2.0). 
+- Update to correct Unity Version (2019.4) and correct dependency to Adaptive Performance (1.2.0).
 - Updated GameSDK wrapper to latest version which enhances GPU frametime information.
 
 ## [1.2.0] - 2019-07-29
