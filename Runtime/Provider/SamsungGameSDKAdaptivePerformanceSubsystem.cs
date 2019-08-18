@@ -7,7 +7,9 @@ using System.Threading;
 using UnityEngine.Scripting;
 using UnityEngine.AdaptivePerformance.Provider;
 
+#if UNITY_2018_3_OR_NEWER
 [assembly: AlwaysLinkAssembly]
+#endif
 namespace UnityEngine.AdaptivePerformance.Samsung.Android
 {
     internal static class GameSDKLog
@@ -239,30 +241,32 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
         private PerformanceDataRecord m_Data = new PerformanceDataRecord();
         private object m_DataLock = new object();
 
-        private AsyncValue<int> m_MainTemperature = null;
-
-        private AsyncValue<int> m_SkinTemp = null;
-        private AsyncValue<int> m_PSTLevel = null;
-
+        private AsyncValue<float> m_MainTemperature = null;
+        private AsyncValue<float> m_SkinTemp = null;
+        private AsyncValue<float> m_PSTLevel = null;
         private AsyncValue<double> m_GPUTime = null;
+        private bool m_UseHighPrecisionSkinTemp = false;
 
         private Version m_Version = null;
 
-        private int m_MinTempLevel = 0;
-        private int m_MaxTempLevel = 7;
+        private float m_MinTempLevel = 0.0f;
+        private float m_MaxTempLevel = 7.0f;
 
         override public IApplicationLifecycle ApplicationLifecycle { get { return this; } }
         override public IDevicePerformanceLevelControl PerformanceLevelControl { get { return this; } }
 
-        public int MaxCpuPerformanceLevel { get { return 3; } }
-        public int MaxGpuPerformanceLevel { get { return 3; } }
+        public int MaxCpuPerformanceLevel { get; set; }
+        public int MaxGpuPerformanceLevel { get; set; }
 
         public SamsungGameSDKAdaptivePerformanceSubsystem()
         {
+            MaxCpuPerformanceLevel = 3;
+            MaxGpuPerformanceLevel = 3;
+
             m_Api = new NativeApi(OnPerformanceWarning, OnPerformanceLevelTimeout);
             m_AsyncUpdater = new AsyncUpdater();
-            m_SkinTemp = new AsyncValue<int>(m_AsyncUpdater, -1, 2.7f, () => m_Api.GetSkinTempLevel());
-            m_PSTLevel = new AsyncValue<int>(m_AsyncUpdater, -1, 3.3f, () => m_Api.GetPSTLevel());
+            m_PSTLevel = new AsyncValue<float>(m_AsyncUpdater, -1.0f, 3.3f, () => (float)m_Api.GetPSTLevel());
+            m_SkinTemp = new AsyncValue<float>(m_AsyncUpdater, -1.0f, 2.7f, () => GetSkinTempLevel());
             m_GPUTime = new AsyncValue<double>(m_AsyncUpdater, -1.0, 0.0f, () => m_Api.GetGpuFrameTime());
 
             Capabilities = Feature.CpuPerformanceLevel | Feature.GpuPerformanceLevel | Feature.PerformanceLevelControl | Feature.TemperatureLevel | Feature.WarningLevel | Feature.GpuFrameTime;
@@ -270,6 +274,11 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             m_MainTemperature = m_SkinTemp;
 
             m_AsyncUpdater.Start();
+        }
+
+        public float GetSkinTempLevel()
+        {
+            return m_UseHighPrecisionSkinTemp ? (float) m_Api.GetHighPrecisionSkinTempLevel() : (float) m_Api.GetSkinTempLevel();
         }
 
         private void OnPerformanceWarning(WarningLevel warningLevel)
@@ -337,20 +346,33 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             {
                 if (TryParseVersion(m_Api.GetVersion(), out m_Version))
                 {
-                    if (m_Version >= new Version(1, 6))
+                    if (m_Version >= new Version(3, 0))
                     {
-                        m_MaxTempLevel = 7;
-                        m_MinTempLevel = 0;
                         initialized = true;
+                        m_UseHighPrecisionSkinTemp = true;
+                        MaxCpuPerformanceLevel = m_Api.GetMaxCpuPerformanceLevel();
+                        MaxGpuPerformanceLevel = m_Api.GetMaxGpuPerformanceLevel();
+                        GameSDKLog.Debug("MaxCpuPerformanceLevel: "+ MaxCpuPerformanceLevel + " MaxGpuPerformanceLevel:"+ MaxGpuPerformanceLevel);
                         m_MainTemperature = m_SkinTemp;
+                    }
+                    else if (m_Version >= new Version(2, 0))
+                    {
+                        initialized = true;
+                        m_UseHighPrecisionSkinTemp = true;
+                    }
+                    else if (m_Version >= new Version(1, 6))
+                    {
+                        initialized = true;
+                        m_UseHighPrecisionSkinTemp = false;
                     }
                     else if (m_Version >= new Version(1, 5))
                     {
-                        m_MaxTempLevel = 6;
-                        m_MinTempLevel = 0;
+                        m_MaxTempLevel = 6.0f;
+                        m_MinTempLevel = 0.0f;
                         initialized = true;
                         m_MainTemperature = m_PSTLevel;
                         m_SkinTemp = null;
+                        m_UseHighPrecisionSkinTemp = false;
                     }
                     else
                     {
@@ -409,7 +431,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                     m_Data.TemperatureLevel = GetTemperatureLevel();
                 }
 
-                m_Data.GpuFrameTime = GpuFrameTime;
+                m_Data.GpuFrameTime = LatestGpuFrameTime();
                 m_Data.ChangeFlags |= Feature.GpuFrameTime;
 
                 PerformanceDataRecord result = m_Data;
@@ -427,25 +449,20 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             }
         }
 
-        private static float NormalizeTemperatureLevel(int currentTempLevel, int minValue, int maxValue)
+        private static float NormalizeTemperatureLevel(float currentTempLevel, float minValue, float maxValue)
         {
             float tempLevel = -1.0f;
             if (currentTempLevel >= minValue && currentTempLevel <= maxValue)
             {
-                tempLevel = (float)currentTempLevel / (float)maxValue;
+                tempLevel = currentTempLevel / maxValue;
                 tempLevel = Math.Min(Math.Max(tempLevel, Constants.MinTemperatureLevel), maxValue);
             }
             return tempLevel;
         }
 
-        private float NormalizeTemperatureLevel(int currentTempLevel)
+        private float NormalizeTemperatureLevel(float currentTempLevel)
         {
             return NormalizeTemperatureLevel(currentTempLevel, m_MinTempLevel, m_MaxTempLevel);
-        }
-
-        private static float NormalizeJTLevel(int currentTempLevel)
-        {
-            return NormalizeTemperatureLevel(currentTempLevel, NativeApi.minJTLevel, NativeApi.maxJTLevel);
         }
 
         private float GetTemperatureLevel()
@@ -453,17 +470,15 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             return NormalizeTemperatureLevel(m_MainTemperature.value);
         }
 
-        public float GpuFrameTime
+        private float LatestGpuFrameTime()
         {
-            get
+            var frameTimeMs = m_GPUTime.value;
+            // Until GameSDK 1.6 we get 0.0 in some error cases, so we only treat values > 0.0 as valid.
+            if (frameTimeMs > 0.0)
             {
-                var frameTimeMs = m_GPUTime.value;
-                if (frameTimeMs >= 0.0)
-                {
-                    return (float)(frameTimeMs / 1000.0);
-                }
-                return -1.0f;
+                return (float)(frameTimeMs / 1000.0);
             }
+            return -1.0f;
         }
 
         public bool SetPerformanceLevel(int cpuLevel, int gpuLevel)
@@ -538,20 +553,16 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
         {
             static private AndroidJavaObject s_GameSDK = null;
             static private IntPtr s_GameSDKRawObjectID;
-            static private IntPtr s_GetCpuJTLevelID;
-            static private IntPtr s_GetGpuJTLevelID;
             static private IntPtr s_GetGpuFrameTimeID;
             static private IntPtr s_GetPSTLevelID;
             static private IntPtr s_GetSkinTempLevelID;
+            static private IntPtr s_GetHighPrecisionSkinTempLevelID;
 
             static private bool s_isAvailable = false;
             static private jvalue[] s_NoArgs = new jvalue[0];
 
             private Action<WarningLevel> PerformanceWarningEvent;
             private Action PerformanceLevelTimeoutEvent;
-
-            public const int minJTLevel = 0;
-            public const int maxJTLevel = 6;
 
             public NativeApi(Action<WarningLevel> sustainedPerformanceWarning, Action sustainedPerformanceTimeout)
                 : base("com.samsung.android.gamesdk.GameSDKManager$Listener")
@@ -615,20 +626,18 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                         s_GameSDK = null;
                     }
 
-                  
-                    //float duration = (float)(DateTime.Now.Ticks - startTime) / 10000.0f;  // ms
-                    // GameSDKLog.Debug($"GameSDK static initialization took {duration}ms. isAvailable={s_isAvailable}");
-
                     if (s_isAvailable)
                     {
                         s_GameSDKRawObjectID = s_GameSDK.GetRawObject();
                         var classID = s_GameSDK.GetRawClass();
 
                         s_GetPSTLevelID = GetJavaMethodID(classID, "getTempLevel", "()I");
-                        s_GetCpuJTLevelID = GetJavaMethodID(classID, "getCpuJTLevel", "()I");
-                        s_GetGpuJTLevelID = GetJavaMethodID(classID, "getGpuJTLevel", "()I");
                         s_GetGpuFrameTimeID = GetJavaMethodID(classID, "getGpuFrameTime", "()D");
                         s_GetSkinTempLevelID = GetJavaMethodID(classID, "getSkinTempLevel", "()I");
+                        s_GetHighPrecisionSkinTempLevelID = GetJavaMethodID(classID, "getHighPrecisionSkinTempLevel", "()D");
+
+                        if (s_GetGpuFrameTimeID == (IntPtr)0 || s_GetSkinTempLevelID == (IntPtr)0)
+                            s_isAvailable = false;
                     }
                 }
             }
@@ -680,14 +689,25 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 bool isInitialized = false;
                 try
                 {
-                    isInitialized = s_GameSDK.Call<bool>("initialize");
-                    if (isInitialized)
+                    if (TryParseVersion(GetVersion(), out Version initVersion))
                     {
-                        isInitialized = RegisterListener();
-                    }
-                    else
-                    {
-                        GameSDKLog.Debug("GameSDK.initialize() failed!");
+                        if (initVersion < new Version(3, 0))
+                        {
+                            isInitialized = s_GameSDK.Call<bool>("initialize");
+                        }
+                        else
+                        {
+                            isInitialized = s_GameSDK.Call<bool>("initialize", initVersion.ToString());
+                        }
+
+                        if (isInitialized)
+                        {
+                            isInitialized = RegisterListener();
+                        }
+                        else
+                        {
+                            GameSDKLog.Debug("GameSDK.initialize() failed!");
+                        }
                     }
                 }
                 catch (Exception)
@@ -771,12 +791,12 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 return currentTempLevel;
             }
 
-            public int GetCpuJTLevel()
+            public double GetHighPrecisionSkinTempLevel()
             {
-                int currentCpuTempLevel = -1;
+                double currentTempLevel = -1.0;
                 try
                 {
-                    currentCpuTempLevel = AndroidJNI.CallIntMethod(s_GameSDKRawObjectID, s_GetCpuJTLevelID, s_NoArgs);
+                    currentTempLevel = AndroidJNI.CallDoubleMethod(s_GameSDKRawObjectID, s_GetHighPrecisionSkinTempLevelID, s_NoArgs);
                     if (AndroidJNI.ExceptionOccurred() != IntPtr.Zero)
                     {
                         AndroidJNI.ExceptionDescribe();
@@ -785,29 +805,11 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 }
                 catch (Exception)
                 {
-                    GameSDKLog.Debug("[Exception] GameSDK.getCpuJTLevel() failed!");
+                    GameSDKLog.Debug("[Exception] GameSDK.getHighPrecisionSkinTempLevel() failed!");
                 }
+                return currentTempLevel;
+            }
 
-                return currentCpuTempLevel;
-            }
-            public int GetGpuJTLevel()
-            {
-                int currentGpuTempLevel = -1;
-                try
-                {
-                    currentGpuTempLevel = AndroidJNI.CallIntMethod(s_GameSDKRawObjectID, s_GetGpuJTLevelID, s_NoArgs);
-                    if (AndroidJNI.ExceptionOccurred() != IntPtr.Zero)
-                    {
-                        AndroidJNI.ExceptionDescribe();
-                        AndroidJNI.ExceptionClear();
-                    }
-                }
-                catch (Exception)
-                {
-                    GameSDKLog.Debug("[Exception] GameSDK.getGpuJTLevel() failed!");
-                }
-                return currentGpuTempLevel;
-            }
             public double GetGpuFrameTime()
             {
                 double gpuFrameTime = -1.0;
@@ -842,6 +844,37 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 }
                 return success;
             }
+
+            public int GetMaxCpuPerformanceLevel()
+            {
+                int maxCpuPerformanceLevel = -1;
+                try
+                {
+                    maxCpuPerformanceLevel = s_GameSDK.Call<int>("getCPULevelMax");
+                }
+                catch (Exception)
+                {
+                    GameSDKLog.Debug("[Exception] GameSDK.getCPULevelMax() failed!");
+                }
+
+                return maxCpuPerformanceLevel;
+            }
+
+            public int GetMaxGpuPerformanceLevel()
+            {
+                int maxGpuPerformanceLevel = -1;
+                try
+                {
+                    maxGpuPerformanceLevel = s_GameSDK.Call<int>("getGPULevelMax");
+                }
+                catch (Exception)
+                {
+                    GameSDKLog.Debug("[Exception] GameSDK.getCPULevelMax() failed!");
+                }
+
+                return maxGpuPerformanceLevel;
+            }
+
         }
 
     }
