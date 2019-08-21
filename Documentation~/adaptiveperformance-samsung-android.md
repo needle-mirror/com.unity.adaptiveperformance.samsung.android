@@ -6,18 +6,18 @@ The Adaptive Performance Samsung (Android) Provider is a subsystem for the [Adap
 
 # Installing the Adaptive Performance Samsung (Android) package
 
-Use the [Unity Package Manager](https://docs.unity3d.com/Packages/com.unity.package-manager-ui@latest/index.html) to install the **Adaptive Performance Samsung (Android)** package, which includes the Samsung (Android) subsystem for Adaptive Performance.  
+Use the [Unity Package Manager](https://docs.unity3d.com/Packages/com.unity.package-manager-ui@latest/index.html) to install the **Adaptive Performance Samsung (Android)** package, which includes the Samsung (Android) subsystem for Adaptive Performance.
 
-Unity automatically installs the Adaptive Performance package as a dependency of the Adaptive Performance Samsung (Android) package. You can use Adaptive Performance as soon as installation through the Package Manager completes. 
+Unity automatically installs the Adaptive Performance package as a dependency of the Adaptive Performance Samsung (Android) package. You can use Adaptive Performance as soon as installation through the Package Manager completes.
 
 ## Quick Setup Guide
 
 * Install **Android Support** for Unity. Unity needs Android Support to build to your Samsung device.
 * **Switch Platform** to Android in the **Build Settings** window.
 * Use the Unity Package Manager and install the **Adaptive Performance Samsung (Android)** package which includes the subsystem. The Unity Package Manager then automatically installs the Adaptive Performance package as a dependency for you as well.
-* When you build and deploy the app to your device, Adaptive Performance will be active by default. 
+* When you build and deploy the app to your device, Adaptive Performance will be active by default.
 
-**Note:** To enable Adaptive Performance log messages in development builds, change `UnityEngine.AdaptivePerformance.StartupSettings.Logging` to `true`. Adaptive Performance then starts printing status information to the console. 
+**Note:** To enable Adaptive Performance log messages in development builds, change `UnityEngine.AdaptivePerformance.StartupSettings.Logging` to `true`. Adaptive Performance then starts printing status information to the console.
 
 # Using the Adaptive Performance Samsung (Android) subsystem
 
@@ -53,7 +53,7 @@ Adaptive Performance: Subsystem version=1.6
 
 ## Document revision history
 This section includes the revision history of the document. The revision history tracks when a document is created, edited, and updated. If you create or update a document, you must add a new row describing the revision. The Documentation Team also uses this table to track when a document is edited and its editing level.
- 
+
 |Date|Reason|
 |---|---|
 |January 22, 2020|Device Support section updated.|

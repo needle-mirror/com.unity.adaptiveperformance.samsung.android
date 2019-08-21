@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
+using static System.Threading.Thread;
 using UnityEngine.Scripting;
 using UnityEngine.AdaptivePerformance.Provider;
 
@@ -104,7 +105,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 {
                     m_Semaphore.WaitOne();
                 }
-                catch(Exception)
+                catch (Exception)
                 {
                     break;
                 }
@@ -129,11 +130,10 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                     {
                         m_UpdateAction[handle].Invoke();
                     }
-                    catch(Exception)
+                    catch (Exception)
                     {
-
                     }
-                    
+
                     lock (m_Mutex)
                     {
                         m_RequestComplete[handle] = true;
@@ -252,6 +252,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
         private float m_MinTempLevel = 0.0f;
         private float m_MaxTempLevel = 7.0f;
         private bool m_UseSetFreqLevels = false;
+        bool m_PerformanceLevelControlSystemChange = false;
 
         override public IApplicationLifecycle ApplicationLifecycle { get { return this; } }
         override public IDevicePerformanceLevelControl PerformanceLevelControl { get { return this; } }
@@ -279,7 +280,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 
         public float GetSkinTempLevel()
         {
-            return m_UseHighPrecisionSkinTemp ? (float) m_Api.GetHighPrecisionSkinTempLevel() : (float) m_Api.GetSkinTempLevel();
+            return m_UseHighPrecisionSkinTemp ? (float)m_Api.GetHighPrecisionSkinTempLevel() : (float)m_Api.GetSkinTempLevel();
         }
 
         private void OnPerformanceWarning(WarningLevel warningLevel)
@@ -289,6 +290,12 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 m_Data.ChangeFlags |= Feature.WarningLevel;
                 m_Data.ChangeFlags |= Feature.PerformanceLevelControl;
                 m_Data.WarningLevel = warningLevel;
+
+                // GameSDK v3.2 >= always offers CPU/GPU frequency control. PerformanceLevelControlAvailable is always available.
+                // GameSDK v3.0 <= can not control CPU/GPU frequency once WarningLevel 2 is reached
+                if (m_UseSetFreqLevels)
+                    return;
+
                 if (warningLevel == WarningLevel.Throttling)
                 {
                     m_Data.ChangeFlags |= Feature.CpuPerformanceLevel;
@@ -306,7 +313,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 
         private void OnPerformanceLevelTimeout()
         {
-            lock(m_DataLock)
+            lock (m_DataLock)
             {
                 m_Data.ChangeFlags |= Feature.CpuPerformanceLevel;
                 m_Data.ChangeFlags |= Feature.GpuPerformanceLevel;
@@ -317,7 +324,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 
         private void ImmediateUpdateTemperature()
         {
-			var timestamp = Time.time;
+            var timestamp = Time.time;
             m_MainTemperature.SyncUpdate(timestamp);
 
             lock (m_DataLock)
@@ -333,7 +340,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             {
                 version = new Version(versionString);
             }
-            catch(Exception)
+            catch (Exception)
             {
                 version = null;
                 return false;
@@ -347,8 +354,10 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             {
                 if (TryParseVersion(m_Api.GetVersion(), out m_Version))
                 {
-                    if (m_Version >= new Version(3, 1))
+                    if (m_Version >= new Version(3, 2))
                     {
+                        m_MaxTempLevel = 10.0f;
+                        m_MinTempLevel = 0.0f;
                         initialized = true;
                         m_UseHighPrecisionSkinTemp = true;
                         MaxCpuPerformanceLevel = m_Api.GetMaxCpuPerformanceLevel();
@@ -396,7 +405,23 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             if (initialized)
             {
                 ImmediateUpdateTemperature();
+                Thread t = new Thread(CheckInitialTemperatureAndSendWarnings);
+                t.Start();
             }
+        }
+
+        void CheckInitialTemperatureAndSendWarnings()
+        {
+            // If the device is already warm upon startup and past the throttling imminent warning level
+            // the warning callback is not called as it's not available yet. We need to set it manually based on temperature as workaround.
+            // On startup the temperature reading is always 0. After a couple of seconds a true value is returned. Therefore we wait for 2 seconds before we make the reading.
+            Sleep(TimeSpan.FromSeconds(2));
+            float currentTempLevel = GetSkinTempLevel();
+
+            if (currentTempLevel >= 7)
+                OnPerformanceWarning(WarningLevel.Throttling);
+            else if (currentTempLevel >= 5)
+                OnPerformanceWarning(WarningLevel.ThrottlingImminent);
         }
 
         override public void Stop()
@@ -437,6 +462,20 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             m_GPUTime.Update(timeSinceStartup);
 
             bool tempChanged = m_MainTemperature.Update(timeSinceStartup);
+
+            if (m_PerformanceLevelControlSystemChange)
+            {
+                var temperatureLevel = (float)m_SkinTemp.value;
+                if (temperatureLevel < 5)
+                {
+                    m_PerformanceLevelControlSystemChange = false;
+                    lock (m_DataLock)
+                    {
+                        m_Data.PerformanceLevelControlAvailable = true;
+                        m_Data.ChangeFlags |= Feature.PerformanceLevelControl;
+                    }
+                }
+            }
 
             lock (m_DataLock)
             {
@@ -508,11 +547,22 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             else if (gpuLevel > MaxGpuPerformanceLevel)
                 gpuLevel = MaxGpuPerformanceLevel;
 
+            if (m_Version == new Version(3, 2) && cpuLevel == 0)
+                cpuLevel = 1;
+
             bool success = false;
             if (m_UseSetFreqLevels)
             {
                 int result = m_Api.SetFreqLevels(cpuLevel, gpuLevel);
-                success = result != 0;
+                success = result == 1;
+
+                if (result == 2)
+                {
+                    GameSDKLog.Debug($"Thermal Mitigation Logic is working and CPU({cpuLevel})/GPU({gpuLevel}) level change request was not approved.");
+                    m_Data.PerformanceLevelControlAvailable = false;
+                    m_Data.ChangeFlags |= Feature.PerformanceLevelControl;
+                    m_PerformanceLevelControlSystemChange = true;
+                }
             }
             else
             {
@@ -539,9 +589,12 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 
         public void ApplicationResume()
         {
+            //We need to re-initialize because some Android onForegroundchange() APIs do not detect the change (e.g. bixby)
+            if (!m_Api.Initialize())
+                GameSDKLog.Debug("Resume: reinitialization failed!");
+
             lock (m_DataLock)
             {
-                // TODO: check if levels are actually unknown or 0 on resume!
                 m_Data.CpuPerformanceLevel = Constants.UnknownPerformanceLevel;
                 m_Data.GpuPerformanceLevel = Constants.UnknownPerformanceLevel;
                 m_Data.ChangeFlags |= Feature.CpuPerformanceLevel;
@@ -587,7 +640,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             {
                 PerformanceWarningEvent = sustainedPerformanceWarning;
                 PerformanceLevelTimeoutEvent = sustainedPerformanceTimeout;
-                StaticInit();              
+                StaticInit();
             }
 
             [Preserve]
@@ -613,7 +666,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             void onRefreshRateChanged()
             {
                 GameSDKLog.Debug("Listener: onRefreshRateChanged()");
-                // Not used in 1.x.x. Available in 2.0.0 but is need to avoid that Samsung GameSDK is correctly calling other callbacks on VRR enabled devices. 
+                // Not used in 1.x.x. Available in 2.0.0 but the callback is needed to avoid that Samsung GameSDK is correctly calling other callbacks on VRR enabled devices.
             }
 
             static IntPtr GetJavaMethodID(IntPtr classId, string name, string sig)
@@ -683,7 +736,6 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 catch (Exception)
                 {
                     success = false;
-                   
                 }
 
                 if (!success)
@@ -723,7 +775,15 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                         }
                         else
                         {
-                            isInitialized = s_GameSDK.Call<bool>("initialize", initVersion.ToString());
+                            // There is a critical bug which can lead to overheated devices in GameSDK 3.1 so we will not initialize GameSDK or Adaptive Performance
+                            if (initVersion == new Version(3, 1))
+                            {
+                                GameSDKLog.Debug("GameSDK 3.1 is not supported and will not be initialized, Adaptive Performance will not be used.");
+                            }
+                            else
+                            {
+                                isInitialized = s_GameSDK.Call<bool>("initialize", initVersion.ToString());
+                            }
                         }
 
                         if (isInitialized)
@@ -915,9 +975,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 
                 return maxGpuPerformanceLevel;
             }
-
         }
-
     }
 }
 
