@@ -411,13 +411,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             m_AsyncUpdater.Dispose();
         }
 
-        override public string Stats
-        {
-            get
-            {
-                return String.Format("SkinTemp={0}", m_SkinTemp != null ? m_SkinTemp.value : -1);
-            }
-        }
+        public override string Stats => $"SkinTemp={m_SkinTemp?.value ?? -1} GPUTime={m_GPUTime}";
 
         override public PerformanceDataRecord Update()
         {
