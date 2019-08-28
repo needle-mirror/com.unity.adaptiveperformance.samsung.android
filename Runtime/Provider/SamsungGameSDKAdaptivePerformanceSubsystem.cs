@@ -394,7 +394,13 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
         {
         }
 
-        override public void Destroy()
+#if UNITY_2019_3_OR_NEWER
+        protected override void OnDestroy() { DestroyInternal(); }
+#else
+        public override void Destroy() { DestroyInternal(); }
+#endif
+
+        private void DestroyInternal()
         {
             if (initialized)
             {
