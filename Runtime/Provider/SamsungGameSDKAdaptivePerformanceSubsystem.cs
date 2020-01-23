@@ -352,7 +352,6 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                         m_UseHighPrecisionSkinTemp = true;
                         MaxCpuPerformanceLevel = m_Api.GetMaxCpuPerformanceLevel();
                         MaxGpuPerformanceLevel = m_Api.GetMaxGpuPerformanceLevel();
-                        GameSDKLog.Debug("MaxCpuPerformanceLevel: "+ MaxCpuPerformanceLevel + " MaxGpuPerformanceLevel:"+ MaxGpuPerformanceLevel);
                         m_MainTemperature = m_SkinTemp;
                     }
                     else if (m_Version >= new Version(2, 0))
@@ -695,7 +694,8 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 bool isInitialized = false;
                 try
                 {
-                    if (TryParseVersion(GetVersion(), out Version initVersion))
+                    Version initVersion;
+                    if (TryParseVersion(GetVersion(), out initVersion))
                     {
                         if (initVersion < new Version(3, 0))
                         {
