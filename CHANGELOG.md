@@ -4,6 +4,12 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2020-03-13
+
+### [Update] to GameSDK 3.1 
+### [Bugfix] which avoid onRefreshRateChanged() crash on S20 during Motion smoothness change (60Hz <-> 120Hz) 
+### [Improvement] with GameSDK 3.1 SetFrequLevel callback for temperature mitigation to avoid overheating when no additional scale factors are used. This replaces SetLevelWithScene in GameSDK 3.1   
+
 ## [1.1.1] - 2020-02-13
 
 ### Update package name from AP to Adaptive Performance as the Unity Package Manager naming limit was raised to 50 characters

@@ -251,6 +251,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 
         private float m_MinTempLevel = 0.0f;
         private float m_MaxTempLevel = 7.0f;
+        private bool m_UseSetFreqLevels = false;
 
         override public IApplicationLifecycle ApplicationLifecycle { get { return this; } }
         override public IDevicePerformanceLevelControl PerformanceLevelControl { get { return this; } }
@@ -346,7 +347,16 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             {
                 if (TryParseVersion(m_Api.GetVersion(), out m_Version))
                 {
-                    if (m_Version >= new Version(3, 0))
+                    if (m_Version >= new Version(3, 1))
+                    {
+                        initialized = true;
+                        m_UseHighPrecisionSkinTemp = true;
+                        MaxCpuPerformanceLevel = m_Api.GetMaxCpuPerformanceLevel();
+                        MaxGpuPerformanceLevel = m_Api.GetMaxGpuPerformanceLevel();
+                        m_MainTemperature = m_SkinTemp;
+                        m_UseSetFreqLevels = true;
+                    }
+                    else if (m_Version >= new Version(3, 0))
                     {
                         initialized = true;
                         m_UseHighPrecisionSkinTemp = true;
@@ -498,7 +508,17 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             else if (gpuLevel > MaxGpuPerformanceLevel)
                 gpuLevel = MaxGpuPerformanceLevel;
 
-            bool success = m_Api.SetLevelWithScene(sceneName, cpuLevel, gpuLevel);
+            bool success = false;
+            if (m_UseSetFreqLevels)
+            {
+                int result = m_Api.SetFreqLevels(cpuLevel, gpuLevel);
+                success = result != 0;
+            }
+            else
+            {
+                success = m_Api.SetLevelWithScene(sceneName, cpuLevel, gpuLevel);
+            }
+
             lock (m_DataLock)
             {
                 var oldCpuLevel = m_Data.CpuPerformanceLevel;
@@ -849,6 +869,21 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                     GameSDKLog.Debug("[Exception] GameSDK.setLevelWithScene({0}, {1}, {2}) failed!", scene, cpu, gpu);
                 }
                 return success;
+            }
+
+            public int SetFreqLevels(int cpu, int gpu)
+            {
+                int result = 0;
+                try
+                {
+                    result = s_GameSDK.Call<int>("setFreqLevels", cpu, gpu);
+                    GameSDKLog.Debug("setFreqLevels({0}, {1}) -> {2}", cpu, gpu, result);
+                }
+                catch (Exception x)
+                {
+                    GameSDKLog.Debug("[Exception] GameSDK.setFreqLevels({0}, {1}) failed: {2}", cpu, gpu, x);
+                }
+                return result;
             }
 
             public int GetMaxCpuPerformanceLevel()
