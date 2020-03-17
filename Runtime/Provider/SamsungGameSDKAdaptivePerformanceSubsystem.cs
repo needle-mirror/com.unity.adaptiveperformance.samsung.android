@@ -313,9 +313,9 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 m_Data.CpuPerformanceLevel = Constants.UnknownPerformanceLevel;
                 m_Data.GpuPerformanceLevel = Constants.UnknownPerformanceLevel;
             }
-        } 
+        }
 
-       private void ImmediateUpdateTemperature()
+        private void ImmediateUpdateTemperature()
         {
 			var timestamp = Time.time;
             m_MainTemperature.SyncUpdate(timestamp);
@@ -535,17 +535,10 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             return success;
         }
 
-        public void ApplicationPause()
-        {
-            if (initialized)
-                m_Api.UnregisterListener();
-        }
+        public void ApplicationPause() {}
 
         public void ApplicationResume()
         {
-            if (initialized)
-                m_Api.RegisterListener();
-
             lock (m_DataLock)
             {
                 // TODO: check if levels are actually unknown or 0 on resume!
@@ -614,6 +607,13 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             {
                 GameSDKLog.Debug("Listener: onReleasedByTimeout()");
                 PerformanceLevelTimeoutEvent();
+            }
+
+            [Preserve]
+            void onRefreshRateChanged()
+            {
+                GameSDKLog.Debug("Listener: onRefreshRateChanged()");
+                // Not used in 1.x.x. Available in 2.0.0 but is need to avoid that Samsung GameSDK is correctly calling other callbacks on VRR enabled devices. 
             }
 
             static IntPtr GetJavaMethodID(IntPtr classId, string name, string sig)
