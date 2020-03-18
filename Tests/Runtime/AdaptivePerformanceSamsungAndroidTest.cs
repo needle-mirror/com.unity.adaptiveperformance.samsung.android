@@ -5,6 +5,7 @@ using System.Collections;
 
 class AdaptivePerformanceSamsungAndroidTests
 {
+
     [UnityTest]
     public IEnumerator DummyAPSamsungAndroidTest()
     {

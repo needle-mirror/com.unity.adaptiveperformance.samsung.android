@@ -1,9 +1,9 @@
 {
   "name": "com.unity.adaptiveperformance.samsung.android",
   "displayName": "Adaptive Performance Samsung Android",
-  "version": "2.0.0-preview.11",
-  "unity": "2019.3",
-  "description": "The Adaptive Performance Samsung Android package provides the Adaptive Performance subsystem for Samsung Android platforms and works in combination with Adaptive Performance. \n\nBy installing this package, you agree to the terms and conditions of the Samsung GameSDK End User License Agreement found under \"View licenses\" above.",
+  "version": "1.2.0",
+  "unity": "2018.3",
+  "description": "The Adaptive Performance Samsung (Android) package provides the Adaptive Performance subsystem for Samsung Android platforms and works in combination with Adaptive Performance. \n\nBy installing this package, you agree to the terms and conditions of the Samsung GameSDK End User License Agreement found under \"View licenses\" above.",
   "keywords": [
     "mobile",
     "adaptive",
@@ -15,18 +15,15 @@
     "ap",
     "provider",
     "subsystem",
-    "gamesdk",
-    "VRR"
+    "gamesdk"
   ],
   "dependencies": {
-    "com.unity.adaptiveperformance": "2.0.0-preview.11"
-  },
-  "upmCi": {
-    "footprint": "0a4436e0f70ccbccd3480a05f78a7d09dcfec189"
+    "com.unity.adaptiveperformance": "1.1.0"
   },
   "repository": {
-    "url": "https://github.cds.internal.unity3d.com/unity/com.unity.adaptiveperformance.samsung.android.git",
+    "footprint": "a932b8f1a58171479fbaaf9c8408d80f3192c5f8",
     "type": "git",
-    "revision": "caad7287d311d1fc7ac1806ccb16e5bdac2cca96"
+    "url": "https://github.cds.internal.unity3d.com/unity/com.unity.adaptiveperformance.samsung.android.git",
+    "revision": "dc76e205248c4dc2bf158ee5307ca9bc6818c76b"
   }
 }

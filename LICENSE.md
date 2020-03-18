@@ -1,6 +1,6 @@
 Adaptive Performance Samsung Android copyright © 2020 Unity Technologies ApS
 
-Licensed under the Unity Companion License for Unity-dependent projects--see [Unity Companion License](http://www.unity3d.com/legal/licenses/Unity_Companion_License).
+Licensed under the Unity Companion License for Unity-dependent projects--see [Unity Companion License](http://www.unity3d.com/legal/licenses/Unity_Companion_License). 
 
 Unless expressly provided otherwise, the Software under this license is made available strictly on an “AS IS” BASIS WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED. Please review the license for details on these and other terms and conditions.
 
@@ -103,3 +103,5 @@ Samsung reserves the right to revise the terms of this License by updating the L
 You may not assign the benefit (including any present, future or contingent interest or right to any sums or damages payable by either party under or in connection with this License) or delegate the burden of this License or hold this License on trust for any other person
 ### 10.6
 You will be deemed to have accepted the terms of this License by installing the Software onto any computer.
+
+
