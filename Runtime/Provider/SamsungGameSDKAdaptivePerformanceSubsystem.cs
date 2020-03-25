@@ -347,7 +347,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             {
                 if (TryParseVersion(m_Api.GetVersion(), out m_Version))
                 {
-                    if (m_Version >= new Version(3, 1))
+                    if (m_Version >= new Version(3, 2)) 
                     {
                         initialized = true;
                         m_UseHighPrecisionSkinTemp = true;
@@ -613,7 +613,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             void onRefreshRateChanged()
             {
                 GameSDKLog.Debug("Listener: onRefreshRateChanged()");
-                // Not used in 1.x.x. Available in 2.0.0 but is need to avoid that Samsung GameSDK is correctly calling other callbacks on VRR enabled devices. 
+                // Not used in 1.x.x. Available in 2.0.0 but the callback is needed to avoid that Samsung GameSDK is correctly calling other callbacks on VRR enabled devices. 
             }
 
             static IntPtr GetJavaMethodID(IntPtr classId, string name, string sig)
@@ -723,7 +723,15 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                         }
                         else
                         {
-                            isInitialized = s_GameSDK.Call<bool>("initialize", initVersion.ToString());
+                            // There is a critical bug which can lead to overheated devices in GameSDK 3.1 so we will not initialize GameSDK or Adaptive Performance
+                            if (initVersion == new Version(3, 1))
+                            {
+                                GameSDKLog.Debug("GameSDK 3.1 is not supported and will not be initialized, Adaptive Performance will not be used.");
+                            } 
+                            else
+                            {
+                                isInitialized = s_GameSDK.Call<bool>("initialize", initVersion.ToString());
+                            }
                         }
 
                         if (isInitialized)
