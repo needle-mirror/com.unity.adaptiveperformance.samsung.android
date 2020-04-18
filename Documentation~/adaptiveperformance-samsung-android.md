@@ -4,6 +4,8 @@
 
 The Adaptive Performance Samsung (Android) Provider is a subsystem for the [Adaptive Performance](https://docs.unity3d.com/Packages/com.unity.adaptiveperformance@latest/index.html) package, to extend Adaptive Performance to Samsung Android devices. It transmits device-specific information to the Adaptive Performance package, and enables you to receive data about the thermal state of a Samsung Android device.
 
+This package also provides access to a Variable Refresh Rate API that is supported by newer Samsung devices with high refresh rate displays.
+
 # Installing the Adaptive Performance Samsung (Android) package
 
 Use the [Unity Package Manager](https://docs.unity3d.com/Packages/com.unity.package-manager-ui@latest/index.html) to install the **Adaptive Performance Samsung (Android)** package, which includes the Samsung (Android) subsystem for Adaptive Performance.  
@@ -22,6 +24,18 @@ Unity automatically installs the Adaptive Performance package as a dependency of
 # Using the Adaptive Performance Samsung (Android) subsystem
 
 This subsystem is only a data provider for Adaptive Performance, and has no user-facing APIs. The Adaptive Performance package includes all functionality. For details, see the [Adaptive Performance](https://docs.unity3d.com/Packages/com.unity.adaptiveperformance@latest/index.html) documentation.
+
+# Variable Refresh Rate
+The Variable Refresh Rate API allows you to change the current display refresh rate.
+The API provides `IVariableRefreshRate.SupportedRefreshRates`, an array of display refresh rates that are supported by the device.
+You can change the current refresh rate by calling `IVariableRefreshRate.SetRefreshRateByIndex` with a valid index for the array of supported refresh rates.
+Please note that the supported refresh rates depend on the model of the phone, Android Display Settings and application specific settings made in Samsung Game Launcher.
+
+The Variable Refresh Rate API is supported  on all devices where `UnityEngine.AdaptivePerformance.Samsung.Android.VariableRefreshRate.Instance` is not `null`.
+
+In case the current refresh rate or the list of supported refresh rate changes because of an external event the `IVariableRefreshRate.RefreshRateChanged` event is triggered. This can happen when a user is making changes to the Display Settings.
+
+The Unity core API `Screent.currentResolution.refreshRate` is automatically updated once a new refresh rate is realized. This may happen with a delay, so it is not recommended to cache the value of `Screent.currentResolution.refreshRate` in your application.
 
 # Technical details
 ## Device Support
@@ -42,6 +56,8 @@ Adaptive Performance Samsung (Android) currently supports the following Samsung 
 * All old and new Samsung Galaxy models
 
 It supports those devices with Samsung GameSDK 3.0+.
+
+Variable Refresh Rate is currently only supported on Galaxy S20.
 
 ## Samsung GameSDK
 

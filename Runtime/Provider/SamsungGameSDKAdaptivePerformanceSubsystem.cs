@@ -7,9 +7,7 @@ using System.Threading;
 using UnityEngine.Scripting;
 using UnityEngine.AdaptivePerformance.Provider;
 
-#if UNITY_2018_3_OR_NEWER
 [assembly: AlwaysLinkAssembly]
-#endif
 namespace UnityEngine.AdaptivePerformance.Samsung.Android
 {
     internal static class GameSDKLog
@@ -264,7 +262,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             MaxCpuPerformanceLevel = 3;
             MaxGpuPerformanceLevel = 3;
 
-            m_Api = new NativeApi(OnPerformanceWarning, OnPerformanceLevelTimeout);
+            m_Api = new NativeApi(OnPerformanceWarning, OnPerformanceLevelTimeout, () => (VariableRefreshRate.Instance as VRRManager)?.OnRefreshRateChanged());
             m_AsyncUpdater = new AsyncUpdater();
             m_PSTLevel = new AsyncValue<float>(m_AsyncUpdater, -1.0f, 3.3f, () => (float)m_Api.GetPSTLevel());
             m_SkinTemp = new AsyncValue<float>(m_AsyncUpdater, -1.0f, 2.7f, () => GetSkinTempLevel());
@@ -279,7 +277,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 
         public float GetSkinTempLevel()
         {
-            return m_UseHighPrecisionSkinTemp ? (float) m_Api.GetHighPrecisionSkinTempLevel() : (float) m_Api.GetSkinTempLevel();
+            return m_UseHighPrecisionSkinTemp ? (float)m_Api.GetHighPrecisionSkinTempLevel() : (float)m_Api.GetSkinTempLevel();
         }
 
         private void OnPerformanceWarning(WarningLevel warningLevel)
@@ -289,6 +287,12 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 m_Data.ChangeFlags |= Feature.WarningLevel;
                 m_Data.ChangeFlags |= Feature.PerformanceLevelControl;
                 m_Data.WarningLevel = warningLevel;
+
+                // GameSDK v3.2 >= always offers CPU/GPU frequency control. PerformanceLevelControlAvailable is always available.
+                // GameSDK v3.0 <= can not control CPU/GPU frequency once WarningLevel 2 is reached
+                if (m_UseSetFreqLevels)
+                    return;
+
                 if (warningLevel == WarningLevel.Throttling)
                 {
                     m_Data.ChangeFlags |= Feature.CpuPerformanceLevel;
@@ -313,9 +317,9 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 m_Data.CpuPerformanceLevel = Constants.UnknownPerformanceLevel;
                 m_Data.GpuPerformanceLevel = Constants.UnknownPerformanceLevel;
             }
-        }
+        } 
 
-        private void ImmediateUpdateTemperature()
+       private void ImmediateUpdateTemperature()
         {
 			var timestamp = Time.time;
             m_MainTemperature.SyncUpdate(timestamp);
@@ -349,6 +353,8 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 {
                     if (m_Version >= new Version(3, 2)) 
                     {
+                        m_MaxTempLevel = 10.0f;
+                        m_MinTempLevel = 0.0f;
                         initialized = true;
                         m_UseHighPrecisionSkinTemp = true;
                         MaxCpuPerformanceLevel = m_Api.GetMaxCpuPerformanceLevel();
@@ -396,6 +402,11 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             if (initialized)
             {
                 ImmediateUpdateTemperature();
+
+                if (m_Api.IsVariableRefreshRateSupported())
+                {
+                    VariableRefreshRate.Instance = new VRRManager(m_Api);
+                }
             }
         }
 
@@ -403,14 +414,9 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
         {
         }
 
-#if UNITY_2019_3_OR_NEWER
-        protected override void OnDestroy() { DestroyInternal(); }
-#else
-        public override void Destroy() { DestroyInternal(); }
-#endif
-
-        private void DestroyInternal()
+        protected override void OnDestroy()
         {
+            VariableRefreshRate.Instance = null;
             if (initialized)
             {
                 m_Api.Terminate();
@@ -437,6 +443,8 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             m_GPUTime.Update(timeSinceStartup);
 
             bool tempChanged = m_MainTemperature.Update(timeSinceStartup);
+
+            (VariableRefreshRate.Instance as VRRManager)?.Update();
 
             lock (m_DataLock)
             {
@@ -549,6 +557,8 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             }
 
             ImmediateUpdateTemperature();
+
+            (VariableRefreshRate.Instance as VRRManager)?.Resume();
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -581,13 +591,15 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 
             private Action<WarningLevel> PerformanceWarningEvent;
             private Action PerformanceLevelTimeoutEvent;
+            private Action RefreshRateChangedEvent;
 
-            public NativeApi(Action<WarningLevel> sustainedPerformanceWarning, Action sustainedPerformanceTimeout)
+            public NativeApi(Action<WarningLevel> sustainedPerformanceWarning, Action sustainedPerformanceTimeout, Action refreshRateChanged)
                 : base("com.samsung.android.gamesdk.GameSDKManager$Listener")
             {
                 PerformanceWarningEvent = sustainedPerformanceWarning;
                 PerformanceLevelTimeoutEvent = sustainedPerformanceTimeout;
-                StaticInit();              
+                RefreshRateChangedEvent = refreshRateChanged;
+                StaticInit();
             }
 
             [Preserve]
@@ -613,7 +625,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             void onRefreshRateChanged()
             {
                 GameSDKLog.Debug("Listener: onRefreshRateChanged()");
-                // Not used in 1.x.x. Available in 2.0.0 but the callback is needed to avoid that Samsung GameSDK is correctly calling other callbacks on VRR enabled devices. 
+                RefreshRateChangedEvent();
             }
 
             static IntPtr GetJavaMethodID(IntPtr classId, string name, string sig)
@@ -924,9 +936,185 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 return maxGpuPerformanceLevel;
             }
 
+            public bool IsVariableRefreshRateSupported()
+            {
+                bool vrrSupported = false;
+                try
+                {
+                    vrrSupported = s_GameSDK.Call<bool>("isGameSDKVariableRefreshRateSupported");
+                    GameSDKLog.Debug("isGameSDKVariableRefreshRateSupported->{0}", vrrSupported);
+                }
+                catch (Exception x)
+                {
+                    GameSDKLog.Debug("[Exception] GameSDK.isGameSDKVariableRefreshRateSupported() failed: " + x.Message);
+                }
+
+                return vrrSupported;
+            }
+
+            public int[] GetSupportedRefreshRates()
+            {
+                int[] result = null;
+                try
+                {
+                    result = s_GameSDK.Call<int[]>("getSupportedRefreshRates");
+                }
+                catch (Exception x)
+                {
+                    GameSDKLog.Debug("[Exception] GameSDK.getSupportedRefreshRates() failed: " + x.Message);
+                }
+
+                return result != null ? result : new int[0];
+            }
+
+            public bool SetRefreshRate(int targetRefreshRate)
+            {
+                try
+                {
+                    s_GameSDK.Call("setRefreshRate", targetRefreshRate);
+                }
+                catch (Exception x)
+                {
+                    GameSDKLog.Debug("[Exception] GameSDK.setRefreshRate() failed: " + x.Message);
+                    return false;
+                }
+                return true;
+            }
+
+            public bool ResetRefreshRate()
+            {
+                try
+                {
+                    s_GameSDK.Call("resetRefreshRate");
+                }
+                catch (Exception x)
+                {
+                    GameSDKLog.Debug("[Exception] GameSDK.resetRefreshRate() failed: " + x.Message);
+                    return false;
+                }
+                return true;
+            }
+
+            public int GetCurrentRefreshRate()
+            {
+                int result = -1;
+                try
+                {
+                    result = s_GameSDK.Call<int>("getCurrentRefreshRate");
+                }
+                catch (Exception x)
+                {
+                    
+                    GameSDKLog.Debug("[Exception] GameSDK.getCurrentRefreshRate() failed: " + x.Message);
+                }
+                return result;
+            }
         }
 
+        [Preserve]
+        internal class VRRManager : IVariableRefreshRate
+        {
+            NativeApi m_Api;
+            AsyncUpdater m_Updater;
+            object m_RefreshRateChangedLock = new object();
+            bool m_RefreshRateChanged;
+            int[] m_SupportedRefreshRates = new int[0];
+            int m_CurrentRefreshRate = -1;
+
+            private void UpdateRefreshRateInfo()
+            {
+                m_SupportedRefreshRates = m_Api.GetSupportedRefreshRates();
+                m_CurrentRefreshRate = Screen.currentResolution.refreshRate;
+            }
+
+            public VRRManager(NativeApi api)
+            {
+                m_Api = api;
+                UpdateRefreshRateInfo();
+            }
+
+            public void Resume()
+            {
+                bool changed = false;
+
+                var oldSupportedRefreshRates = m_SupportedRefreshRates;
+                var oldRefreshRate = m_CurrentRefreshRate;
+
+                UpdateRefreshRateInfo();
+
+                if (m_CurrentRefreshRate != oldRefreshRate)
+                {
+                    changed = true;
+                }
+                else if (oldSupportedRefreshRates.Length != m_SupportedRefreshRates.Length)
+                {
+                    changed = true;
+                }
+                else
+                {
+                    for (int i = 0; i < oldSupportedRefreshRates.Length; ++i)
+                    {
+                        if (oldSupportedRefreshRates[i] != m_SupportedRefreshRates[i])
+                        {
+                            changed = true;
+                            break;
+                        }
+                    }
+                }
+                  
+                if (changed)
+                {
+                    lock (m_RefreshRateChangedLock)
+                    {
+                        m_RefreshRateChanged = false;
+                    }
+                   
+                    RefreshRateChanged.Invoke();
+                }
+            }
+
+            public void Update()
+            {
+                bool refreshRateChanged = false;
+                lock (m_RefreshRateChangedLock)
+                {
+                    refreshRateChanged = m_RefreshRateChanged;
+                    m_RefreshRateChanged = false;
+                }
+
+                if (refreshRateChanged)
+                {
+                    UpdateRefreshRateInfo();
+                    RefreshRateChanged.Invoke();
+                }
+            }
+
+            public int[] SupportedRefreshRates { get { return m_SupportedRefreshRates; } }
+            public int CurrentRefreshRate { get { return m_CurrentRefreshRate; } }
+
+            public bool SetRefreshRateByIndex(int index)
+            {
+                if (index >= 0 || index < SupportedRefreshRates.Length)
+                {
+                    if (m_Api.SetRefreshRate(SupportedRefreshRates[index]))
+                    {
+                        m_CurrentRefreshRate = SupportedRefreshRates[index];
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            public event VariableRefreshRateEventHandler RefreshRateChanged;
+
+            public void OnRefreshRateChanged()
+            {
+                lock (m_RefreshRateChangedLock)
+                {
+                    m_RefreshRateChanged = true;
+                }
+            }
+        }
     }
 }
-
 #endif
