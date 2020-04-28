@@ -4,6 +4,12 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [1.1.6] - 2020-04-29
+
+### Changed 
+- GameSDK 3.2 uses a wider range of temperature levels and maximum temperature level is changed to level 10. 
+- GameSDK 3.2 has a different behaviour when setting frequency levels and warning level 2 (throttling) is reached and you are always in control of the CPU/GPU level.
+
 ## [1.1.4] - 2020-03-26
 
 ### Removed

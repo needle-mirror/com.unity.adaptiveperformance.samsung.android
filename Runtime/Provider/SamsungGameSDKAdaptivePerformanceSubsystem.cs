@@ -289,6 +289,12 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 m_Data.ChangeFlags |= Feature.WarningLevel;
                 m_Data.ChangeFlags |= Feature.PerformanceLevelControl;
                 m_Data.WarningLevel = warningLevel;
+
+                // GameSDK v3.2 >= always offers CPU/GPU frequency control. PerformanceLevelControlAvailable is always available.
+                // GameSDK v3.0 <= can not control CPU/GPU frequency once WarningLevel 2 is reached
+                if (m_UseSetFreqLevels)
+                    return;
+
                 if (warningLevel == WarningLevel.Throttling)
                 {
                     m_Data.ChangeFlags |= Feature.CpuPerformanceLevel;
@@ -349,6 +355,8 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 {
                     if (m_Version >= new Version(3, 2)) 
                     {
+                        m_MaxTempLevel = 10.0f;
+                        m_MinTempLevel = 0.0f;
                         initialized = true;
                         m_UseHighPrecisionSkinTemp = true;
                         MaxCpuPerformanceLevel = m_Api.GetMaxCpuPerformanceLevel();
