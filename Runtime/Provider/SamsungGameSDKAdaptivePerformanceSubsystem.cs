@@ -12,10 +12,12 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 {
     internal static class GameSDKLog
     {
+        static SamsungAndroidProviderSettings settings = SamsungAndroidProviderSettings.GetSettings();
+
         [Conditional("DEVELOPMENT_BUILD")]
         public static void Debug(string format, params object[] args)
         {
-            if (StartupSettings.Logging)
+            if (settings != null && settings.logging && settings.samsungProviderLogging)
                 UnityEngine.Debug.Log(System.String.Format("[Samsung GameSDK] " + format, args));
         }
     }
@@ -102,7 +104,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 {
                     m_Semaphore.WaitOne();
                 }
-                catch(Exception)
+                catch (Exception)
                 {
                     break;
                 }
@@ -127,11 +129,10 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                     {
                         m_UpdateAction[handle].Invoke();
                     }
-                    catch(Exception)
+                    catch (Exception)
                     {
-
                     }
-                    
+
                     lock (m_Mutex)
                     {
                         m_RequestComplete[handle] = true;
@@ -310,18 +311,18 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 
         private void OnPerformanceLevelTimeout()
         {
-            lock(m_DataLock)
+            lock (m_DataLock)
             {
                 m_Data.ChangeFlags |= Feature.CpuPerformanceLevel;
                 m_Data.ChangeFlags |= Feature.GpuPerformanceLevel;
                 m_Data.CpuPerformanceLevel = Constants.UnknownPerformanceLevel;
                 m_Data.GpuPerformanceLevel = Constants.UnknownPerformanceLevel;
             }
-        } 
+        }
 
-       private void ImmediateUpdateTemperature()
+        private void ImmediateUpdateTemperature()
         {
-			var timestamp = Time.time;
+            var timestamp = Time.time;
             m_MainTemperature.SyncUpdate(timestamp);
 
             lock (m_DataLock)
@@ -337,7 +338,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             {
                 version = new Version(versionString);
             }
-            catch(Exception)
+            catch (Exception)
             {
                 version = null;
                 return false;
@@ -351,7 +352,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             {
                 if (TryParseVersion(m_Api.GetVersion(), out m_Version))
                 {
-                    if (m_Version >= new Version(3, 2)) 
+                    if (m_Version >= new Version(3, 2))
                     {
                         m_MaxTempLevel = 10.0f;
                         m_MinTempLevel = 0.0f;
@@ -547,9 +548,12 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 
         public void ApplicationResume()
         {
+            //We need to re-initialize because some Android onForegroundchange() APIs do not detect the change (e.g. bixby)
+            if (!m_Api.Initialize())
+                GameSDKLog.Debug("Resume: reinitialization failed!");
+
             lock (m_DataLock)
             {
-                // TODO: check if levels are actually unknown or 0 on resume!
                 m_Data.CpuPerformanceLevel = Constants.UnknownPerformanceLevel;
                 m_Data.GpuPerformanceLevel = Constants.UnknownPerformanceLevel;
                 m_Data.ChangeFlags |= Feature.CpuPerformanceLevel;
@@ -561,7 +565,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             (VariableRefreshRate.Instance as VRRManager)?.Resume();
         }
 
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void RegisterDescriptor()
         {
             if (!SystemInfo.deviceModel.StartsWith("samsung", StringComparison.OrdinalIgnoreCase))
@@ -695,7 +699,6 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 catch (Exception)
                 {
                     success = false;
-                   
                 }
 
                 if (!success)
@@ -739,7 +742,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                             if (initVersion == new Version(3, 1))
                             {
                                 GameSDKLog.Debug("GameSDK 3.1 is not supported and will not be initialized, Adaptive Performance will not be used.");
-                            } 
+                            }
                             else
                             {
                                 isInitialized = s_GameSDK.Call<bool>("initialize", initVersion.ToString());
@@ -774,7 +777,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 {
                     var packageName = Application.identifier;
                     GameSDKLog.Debug("GameSDK.finalize({0})", packageName);
-                    success = s_GameSDK.Call<bool>("finalize", packageName);
+                    s_GameSDK.Call<bool>("finalize", packageName);
                 }
                 catch (Exception)
                 {
@@ -1004,7 +1007,6 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 }
                 catch (Exception x)
                 {
-                    
                     GameSDKLog.Debug("[Exception] GameSDK.getCurrentRefreshRate() failed: " + x.Message);
                 }
                 return result;
@@ -1061,14 +1063,14 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                         }
                     }
                 }
-                  
+
                 if (changed)
                 {
                     lock (m_RefreshRateChangedLock)
                     {
                         m_RefreshRateChanged = false;
                     }
-                   
+
                     RefreshRateChanged.Invoke();
                 }
             }

@@ -4,8 +4,8 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - 2020-03-06
+## [2.0.0] - 2020-06-05
 
-### Added 
+### Added
 - Variable Refresh Rate API (VRR) to support multiple vsync displays
-- Increase min support version to Unity 2019.3
+- Verified support for 2020.2 and minimum support 2019 LTS+. Please use Adaptive Performance Samsung Android 1.x for earlier versions supporting 2018.3+.
