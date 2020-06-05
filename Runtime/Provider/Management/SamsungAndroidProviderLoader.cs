@@ -12,7 +12,7 @@ using UnityEngine.AdaptivePerformance.Provider;
 namespace UnityEngine.AdaptivePerformance.Samsung.Android
 {
     /// <summary>
-    /// SamsungAndroidProviderLoader implents the loader for Adaptive Performance on Samsung devices running Android.
+    /// SamsungAndroidProviderLoader implements the loader for Adaptive Performance on Samsung devices running Android.
     /// </summary>
 #if UNITY_EDITOR
     [AdaptivePerformanceSupportedBuildTargetAttribute(BuildTargetGroup.Android)]
@@ -23,16 +23,16 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             new List<AdaptivePerformanceSubsystemDescriptor>();
 
         #if UNITY_ANDROID
-        /// <summary>Return the currently active Samsung Android Subsystem instance, if any.</summary>
+        /// <summary>Returns the currently active Samsung Android Subsystem instance, if an instance exists.</summary>
         public SamsungGameSDKAdaptivePerformanceSubsystem samsungGameSDKSubsystem
         {
             get { return GetLoadedSubsystem<SamsungGameSDKAdaptivePerformanceSubsystem>(); }
         }
 #endif
         /// <summary>
-        /// Implementation of <see cref="AdaptivePerformanceLoader.GetDefaultSubsystem"/>
+        /// Implementation of <see cref="AdaptivePerformanceLoader.GetDefaultSubsystem"/>.
         /// </summary>
-        /// <returns>Samsung Android Subsystem which is the loaded default subsystem. Adaptive Performance always initilizes the first subsystem and uses it as a default since only one subsystem can be present at a time. The order can be changed in the Adaptive Performance Provider Settings.</returns>
+        /// <returns>Returns the Samsung Android Subsystem, which is the loaded default subsystem. Because only one subsystem can be present at a time, Adaptive Performance always initializes the first subsystem and uses it as a default. You can change subsystem order in the Adaptive Performance Provider Settings.</returns>
         public override ISubsystem GetDefaultSubsystem()
         {
 #if UNITY_ANDROID
@@ -43,7 +43,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
         }
 
         /// <summary>
-        /// Implementation of <see cref="AdaptivePerformanceLoader.GetSettings"/>
+        /// Implementation of <see cref="AdaptivePerformanceLoader.GetSettings"/>.
         /// </summary>
         /// <returns>Returns the Samsung Android settings.</returns>
         public override IAdaptivePerformanceSettings GetSettings()
@@ -51,8 +51,8 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             return SamsungAndroidProviderSettings.GetSettings();
         }
 
-        /// <summary>Implementaion of <see cref="AdaptivePerformanceLoader.Initialize"/></summary>
-        /// <returns>True if successfully initialized the Samsung Android subsystem, false otherwise</returns>
+        /// <summary>Implementaion of <see cref="AdaptivePerformanceLoader.Initialize"/>.</summary>
+        /// <returns>True if successfully initialized the Samsung Android subsystem, false otherwise.</returns>
         public override bool Initialize()
         {
 #if UNITY_ANDROID
@@ -68,8 +68,8 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 #endif
         }
 
-        /// <summary>Implementation of <see cref="AdaptivePerformanceLoader.Start"/></summary>
-        /// <returns>True if successfully starts the Samsung Android subsystem, false otherwise</returns>
+        /// <summary>Implementation of <see cref="AdaptivePerformanceLoader.Start"/>.</summary>
+        /// <returns>True if successfully started the Samsung Android subsystem, false otherwise.</returns>
         public override bool Start()
         {
 #if UNITY_ANDROID
@@ -80,8 +80,8 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 #endif
         }
 
-        /// <summary>Implementaion of <see cref="AdaptivePerformanceLoader.Stop"/></summary>
-        /// <returns>True if successfully stops the Samsung Android subsystem, false otherwise</returns>
+        /// <summary>Implementaion of <see cref="AdaptivePerformanceLoader.Stop"/>.</summary>
+        /// <returns>True if successfully stopped the Samsung Android subsystem, false otherwise.</returns>
         public override bool Stop()
         {
 #if UNITY_ANDROID
@@ -92,8 +92,8 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 #endif
         }
 
-        /// <summary>Implementaion of <see cref="AdaptivePerformanceLoader.Deinitialize"/></summary>
-        /// <returns>True if successfully deinitialized the Samsung Android subsystem, false otherwise</returns>
+        /// <summary>Implementaion of <see cref="AdaptivePerformanceLoader.Deinitialize"/>.</summary>
+        /// <returns>True if successfully deinitialized the Samsung Android subsystem, false otherwise.</returns>
         public override bool Deinitialize()
         {
 #if UNITY_ANDROID

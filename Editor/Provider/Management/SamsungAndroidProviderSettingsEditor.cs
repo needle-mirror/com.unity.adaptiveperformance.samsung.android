@@ -18,11 +18,12 @@ namespace UnityEditor.AdaptivePerformance.Samsung.Android.Editor
         static GUIContent s_ShowVRRSettings = EditorGUIUtility.TrTextContent(L10n.Tr("VRR Settings"));
         static GUIContent s_SamsungProviderLoggingLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Samsung Provider Logging"), L10n.Tr("Only active in development mode."));
         static GUIContent s_AutomaticVRRLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Automatic VRR"), L10n.Tr("Enable Automatic Variable Refresh Rate. Only enabled if VRR is supported on the target device."));
-        static GUIContent s_HighSpeedVRRLabel = EditorGUIUtility.TrTextContent(L10n.Tr("High-Speed VRR"), L10n.Tr("Allow High-Speed Variable Refresh Rate. It is required if you want to use variable refresh rates higher than 60hz. Can increase device temperature when activated."));
+        static GUIContent s_HighSpeedVRRLabel = EditorGUIUtility.TrTextContent(L10n.Tr("High-Speed VRR"), L10n.Tr("Allow High-Speed Variable Refresh Rate. This is required if you want to use variable refresh rates higher than 60hz. Can increase device temperature when activated."));
 
         static string s_UnsupportedInfo = L10n.Tr("Adaptive Performance Samsung Android settings not available on this platform.");
         static string s_HighSpeedVRRInfo = L10n.Tr("High-Speed VRR can increase device temperature.");
-        static string s_AutoVRRInfo = L10n.Tr("Auto VRR only works with VSync disabled which is currently enabled. See QualitySettings.vSyncCount in the Quality Settings window for more information.");
+        static string s_AutoVRRInfo = L10n.Tr("Auto VRR only works when VSync is disabled. VSync is currently enabled. See QualitySettings.vSyncCount in the Quality Settings window for more information.");
+        //static string s_FramePacingInfo = L10n.Tr("VRR will not work correctly if Frame Pacing is enabled. Please disable Frame Pacing in the Player Settings.");
 
         SerializedProperty m_SamsungProviderLoggingProperty;
         SerializedProperty m_AutomaticVRRProperty;
@@ -60,6 +61,10 @@ namespace UnityEditor.AdaptivePerformance.Samsung.Android.Editor
                     if (m_ShowVRRSettings)
                     {
                         EditorGUI.indentLevel++;
+                        //if (PlayerSettings.Android.androidUseSwappy)
+                        //{
+                        //    EditorGUILayout.HelpBox(s_FramePacingInfo, MessageType.Info);
+                        //}
                         if (m_HighSpeedVRRProperty.boolValue)
                         {
                             EditorGUILayout.HelpBox(s_HighSpeedVRRInfo, MessageType.Warning);

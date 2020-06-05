@@ -4,25 +4,26 @@ using UnityEngine.AdaptivePerformance.Samsung.Android;
 namespace UnityEngine.AdaptivePerformance
 {
     /// <summary>
-    /// A scaler used by <see cref="AdaptivePerformanceIndexer"/> to adjust the rendering rate using Variable Refresh Rate <see cref="VariableRefreshRate"/>.
+    /// A scaler used by <see cref="AdaptivePerformanceIndexer"/> to adjust the rendering rate using <see cref="VariableRefreshRate"/>.
     /// </summary>
     public class AdaptiveVariableRefreshRate : AdaptiveFramerate
     {
         /// <summary>
-        /// Returns the name of the scaler
+        /// Returns the name of the scaler.
         /// </summary>
         public override string Name  => "Adaptive VRR";
 
         bool m_AdaptiveVRREnabled = false;
 
         /// <summary>
-        /// Returns `true` if this scaler is active, otherwise returns `false`.
+        /// Returns true if this scaler is active, false otherwise.
         /// </summary>
         public override bool Enabled { get => m_AdaptiveVRREnabled; set => m_AdaptiveVRREnabled = value; }
 
 
         IVariableRefreshRate m_VRR;
         int m_CurrentRefreshRateIndex;
+        int m_DefaultRefreshRateIndex;
 
         /// <summary>
         /// Override for Awake in the base class to set up for Variable Refresh Rate.
@@ -43,6 +44,30 @@ namespace UnityEngine.AdaptivePerformance
 
             m_VRR.RefreshRateChanged += RefreshRateChanged;
             m_CurrentRefreshRateIndex = Array.IndexOf(m_VRR.SupportedRefreshRates, m_VRR.CurrentRefreshRate);
+        }
+
+        /// <summary>
+        /// Callback when scaler gets disabled and removed from indexer.
+        /// </summary>
+        protected override void OnDisabled()
+        {
+            base.OnDisabled();
+            if (m_VRR == null)
+                return;
+
+            m_VRR.SetRefreshRateByIndex(m_DefaultRefreshRateIndex);
+        }
+
+        /// <summary>
+        /// Callback when scaler gets enabled and added to the indexer.
+        /// </summary>
+        protected override void OnEnabled()
+        {
+            base.OnEnabled();
+            if (m_VRR == null)
+                return;
+
+            m_DefaultRefreshRateIndex = Array.IndexOf(m_VRR.SupportedRefreshRates, m_VRR.CurrentRefreshRate);
         }
 
         void OnDestroy()

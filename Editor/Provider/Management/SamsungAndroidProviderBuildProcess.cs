@@ -13,28 +13,28 @@ using UnityEngine.AdaptivePerformance.Samsung.Android;
 namespace UnityEditor.AdaptivePerformance.Samsung.Android.Editor
 {
     /// <summary>
-    /// Samsung Android build processor makes sure that any custom configuration that the user creates is
+    /// The Samsung Android provider build processor ensures that any custom configuration that the user creates is
     /// correctly passed on to the provider implementation at runtime.
     ///
     /// Custom configuration instances that are stored in EditorBuildSettings are not copied to the target build
-    /// as they are considered unreferenced assets. In order to get them to the runtime side of things, they need
-    /// to be serialized to the build app and deserialized at runtime. Previously this would be a manual process
-    /// requiring the implementor to manually serialize to some location that can then be read from to deserialize
-    /// at runtime. With the new PlayerSettings Preloaded Assets API we can now just add our asset to the preloaded
+    /// because they are considered unreferenced assets. To get them to the runtime, they must
+    /// be serialized to the built app and deserialized at runtime. Previously, this as a manual process
+    /// that required the implementor to manually serialize to some location that can then be read from to deserialize
+    /// at runtime. With the new PlayerSettings Preloaded Assets API, you can now add your asset to the preloaded
     /// list and have it be instantiated at app launch.
     ///
-    /// Note that the preloaded assets are only notified with Awake, so anything you want or need to do with the
-    /// asset after launch needs to be handled there.
+    /// **Note**: Preloaded assets are only notified with Awake, so anything you want or need to do with the
+    /// asset after launch needs to be handled in the Samsung Android provider build process.
     ///
-    /// More info on APIs used here:
-    /// * <see cref="https://docs.unity3d.com/ScriptReference/EditorBuildSettings.html">EditorBuildSettings</see>
-    /// * <see cref="https://docs.unity3d.com/ScriptReference/PlayerSettings.GetPreloadedAssets.html">PlayerSettings.GetPreloadedAssets</see>
-    /// * <see cref="https://docs.unity3d.com/ScriptReference/PlayerSettings.SetPreloadedAssets.html">PlayerSettings.SetPreloadedAssets</see>
+    /// For more information about the APIs used, see:
+    /// * <see href="https://docs.unity3d.com/ScriptReference/EditorBuildSettings.html">EditorBuildSettings</see>
+    /// * <see href="https://docs.unity3d.com/ScriptReference/PlayerSettings.GetPreloadedAssets.html">PlayerSettings.GetPreloadedAssets</see>
+    /// * <see href="https://docs.unity3d.com/ScriptReference/PlayerSettings.SetPreloadedAssets.html">PlayerSettings.SetPreloadedAssets</see>
     /// </summary>
     public class SamsungAndroidProviderBuildProcess : IPreprocessBuildWithReport, IPostprocessBuildWithReport
     {
         /// <summary>
-        /// Override of <see cref="IPreprocessBuildWithReport"/> and <see cref="IPostprocessBuildWithReport"/>
+        /// Override of <see cref="IPreprocessBuildWithReport"/> and <see cref="IPostprocessBuildWithReport"/>.
         /// </summary>
         public int callbackOrder
         {
@@ -42,7 +42,7 @@ namespace UnityEditor.AdaptivePerformance.Samsung.Android.Editor
         }
 
         /// <summary>
-        /// Cleans out settings which could be left over from previous unsuccessfull runs.
+        /// Clears out settings which could be left over from previous unsuccessfull runs.
         /// </summary>
         void CleanOldSettings()
         {
@@ -67,12 +67,12 @@ namespace UnityEditor.AdaptivePerformance.Samsung.Android.Editor
         }
 
         /// <summary>
-        /// Override of <see cref="IPreprocessBuildWithReport"/>
+        /// Override of <see cref="IPreprocessBuildWithReport"/>.
         /// </summary>
         /// <param name="report">Build report.</param>
         public void OnPreprocessBuild(BuildReport report)
         {
-            // Always remember to cleanup preloaded assets after build to make sure we don't
+            // Always remember to clean up preloaded assets after build to make sure we don't
             // dirty later builds with assets that may not be needed or are out of date.
             CleanOldSettings();
 
@@ -91,11 +91,11 @@ namespace UnityEditor.AdaptivePerformance.Samsung.Android.Editor
             }
         }
 
-        /// <summary>Override of <see cref="IPostprocessBuildWithReport"/></summary>
+        /// <summary>Override of <see cref="IPostprocessBuildWithReport"/></summary>.
         /// <param name="report">Build report.</param>
         public void OnPostprocessBuild(BuildReport report)
         {
-            // Always remember to cleanup preloaded assets after build to make sure we don't
+            // Always remember to clean up preloaded assets after build to make sure we don't
             // dirty later builds with assets that may not be needed or are out of date.
             CleanOldSettings();
         }

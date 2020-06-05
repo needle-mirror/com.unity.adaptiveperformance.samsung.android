@@ -4,7 +4,7 @@ using UnityEngine.AdaptivePerformance;
 namespace UnityEngine.AdaptivePerformance.Samsung.Android
 {
     /// <summary>
-    /// Provider Settings for Samsung Android Provider which controls the runtime asset instance which stores the Settings.
+    /// Provider Settings for Samsung Android provider, which controls the runtime asset instance that stores the settings.
     /// </summary>
     [System.Serializable]
     [AdaptivePerformanceConfigurationData("Samsung (Android)", SamsungAndroidProviderConstants.k_SettingsKey)]
@@ -16,10 +16,10 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
         /// <summary>
         ///  Control debug logging of the Samsung provider.
         ///  This setting only affects development builds. All logging is disabled in release builds.
-        ///  The global logging setting can also be controlled after startup using <see cref="IDevelopmentSettings.Logging"/>.
+        ///  You can also control the global logging setting after startup by using <see cref="IDevelopmentSettings.Logging"/>.
         ///  Logging is disabled by default.
         /// </summary>
-        /// <value>`true` to enable debug logging, `false` to disable it (default: `false`)</value>
+        /// <value>Set this to true to enable debug logging, or false to disable it (default: false).</value>
         public bool samsungProviderLogging
         {
             get { return m_SamsungProviderLogging; }
@@ -31,13 +31,13 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 
         /// <summary>
         ///  Use High-Speed Variable Refresh Rate to allow refresh rates higher than 60 fps set via VRR APIs.
-        ///  It is required if you want to use variable refresh rates higher than 60hz.
+        ///  This is required if you want to use variable refresh rates higher than 60hz.
         ///  Can increase device temperature when activated.
         ///  This setting only has an effect if a device supports Variable Refresh Rate.
         ///  Unity does not set High-Speed Variable Refresh Rate automatically by default.
         /// </summary>
-        /// <value>`true` to allow High-Speed Variable Refresh Rate, `false` to disable it (default: `false`)</value>
-        public bool highSpeedautomaticVRR
+        /// <value>Set this to true to allow High-Speed Variable Refresh Rate, or false to disable it (default: false).</value>
+        public bool highSpeedVRR
         {
             get { return m_HighSpeedVRR; }
             set { m_HighSpeedVRR = value; }
@@ -47,19 +47,18 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
         bool m_AutomaticVRR = true;
 
         /// <summary>
-        ///  Use automatic Variable Refresh Rate to set refresh rate automatically based on the timing of CPU, GPU, the thermal state and target framerate.
-        ///  This setting effects the refresh rate only if a device supports Variable Refresh Rate.
+        ///  Use automatic Variable Refresh Rate to set refresh rate automatically based on the timing of CPU, GPU, device thermal state, and target framerate.
+        ///  This setting only affects the refresh rate if the device supports Variable Refresh Rate.
         ///  Unity sets Variable Refresh Rate automatically by default.
         /// </summary>
-        /// <value>`true` to enable Automatic Variable Refresh Rate, `false` to disable it (default: `true` if device supports Variable Refresh Rate)</value>
+        /// <value>`Set this to true to enable Automatic Variable Refresh Rate, false to disable it (default: true if device supports Variable Refresh Rate).</value>
         public bool automaticVRR
         {
             get { return m_AutomaticVRR; }
             set { m_AutomaticVRR = value; }
         }
 
-        /// <summary>Static instance that will hold the runtime asset instance we created in our build process.</summary>
-        /// <see cref="SamsungAndroidProviderBuildProcess"/>
+        /// <summary>Static instance that holds the runtime asset instance Unity creates during the build process.</summary>
 #if !UNITY_EDITOR
         public static SamsungAndroidProviderSettings s_RuntimeInstance = null;
 #endif
