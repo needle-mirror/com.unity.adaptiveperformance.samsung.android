@@ -26,6 +26,38 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             set { m_SamsungProviderLogging = value; }
         }
 
+        [SerializeField, Tooltip("Allow High-Speed Variable Refresh Rate. It is required if you want to use variable refresh rates higher than 60hz. Can increase device temperature when activated.")]
+        bool m_HighSpeedVRR = false;
+
+        /// <summary>
+        ///  Use High-Speed Variable Refresh Rate to allow refresh rates higher than 60 fps set via VRR APIs.
+        ///  It is required if you want to use variable refresh rates higher than 60hz.
+        ///  Can increase device temperature when activated.
+        ///  This setting only has an effect if a device supports Variable Refresh Rate.
+        ///  Unity does not set High-Speed Variable Refresh Rate automatically by default.
+        /// </summary>
+        /// <value>`true` to allow High-Speed Variable Refresh Rate, `false` to disable it (default: `false`)</value>
+        public bool highSpeedautomaticVRR
+        {
+            get { return m_HighSpeedVRR; }
+            set { m_HighSpeedVRR = value; }
+        }
+
+        [SerializeField, Tooltip("Enable Automatic Variable Refresh Rate. Only enabled if VRR is supported on the target device.")]
+        bool m_AutomaticVRR = true;
+
+        /// <summary>
+        ///  Use automatic Variable Refresh Rate to set refresh rate automatically based on the timing of CPU, GPU, the thermal state and target framerate.
+        ///  This setting effects the refresh rate only if a device supports Variable Refresh Rate.
+        ///  Unity sets Variable Refresh Rate automatically by default.
+        /// </summary>
+        /// <value>`true` to enable Automatic Variable Refresh Rate, `false` to disable it (default: `true` if device supports Variable Refresh Rate)</value>
+        public bool automaticVRR
+        {
+            get { return m_AutomaticVRR; }
+            set { m_AutomaticVRR = value; }
+        }
+
         /// <summary>Static instance that will hold the runtime asset instance we created in our build process.</summary>
         /// <see cref="SamsungAndroidProviderBuildProcess"/>
 #if !UNITY_EDITOR

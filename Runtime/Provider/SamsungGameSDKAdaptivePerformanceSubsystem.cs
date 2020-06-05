@@ -17,7 +17,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
         [Conditional("DEVELOPMENT_BUILD")]
         public static void Debug(string format, params object[] args)
         {
-            if (settings != null && settings.logging && settings.samsungProviderLogging)
+            if (settings != null && settings.samsungProviderLogging)
                 UnityEngine.Debug.Log(System.String.Format("[Samsung GameSDK] " + format, args));
         }
     }
@@ -252,11 +252,15 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
         private float m_MaxTempLevel = 7.0f;
         private bool m_UseSetFreqLevels = false;
 
+        private AutoVariableRefreshRate m_AutoVariableRefreshRate;
+
         override public IApplicationLifecycle ApplicationLifecycle { get { return this; } }
         override public IDevicePerformanceLevelControl PerformanceLevelControl { get { return this; } }
 
         public int MaxCpuPerformanceLevel { get; set; }
         public int MaxGpuPerformanceLevel { get; set; }
+
+        static SamsungAndroidProviderSettings settings = SamsungAndroidProviderSettings.GetSettings();
 
         public SamsungGameSDKAdaptivePerformanceSubsystem()
         {
@@ -407,6 +411,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 if (m_Api.IsVariableRefreshRateSupported())
                 {
                     VariableRefreshRate.Instance = new VRRManager(m_Api);
+                    m_AutoVariableRefreshRate = new AutoVariableRefreshRate(VariableRefreshRate.Instance);
                 }
             }
         }
@@ -446,6 +451,14 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             bool tempChanged = m_MainTemperature.Update(timeSinceStartup);
 
             (VariableRefreshRate.Instance as VRRManager)?.Update();
+
+            if (QualitySettings.vSyncCount > 0)
+                settings.automaticVRR = false;
+            else
+                settings.automaticVRR = true;
+
+            if ((VariableRefreshRate.Instance as VRRManager) != null && settings.automaticVRR && QualitySettings.vSyncCount <= 0)
+                m_AutoVariableRefreshRate.UpdateAutoVRR();
 
             lock (m_DataLock)
             {
@@ -1022,11 +1035,12 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             bool m_RefreshRateChanged;
             int[] m_SupportedRefreshRates = new int[0];
             int m_CurrentRefreshRate = -1;
+            int m_LastSetRefreshRate = -1;
 
             private void UpdateRefreshRateInfo()
             {
                 m_SupportedRefreshRates = m_Api.GetSupportedRefreshRates();
-                m_CurrentRefreshRate = Screen.currentResolution.refreshRate;
+                m_CurrentRefreshRate = m_Api.GetCurrentRefreshRate(); // Screen.currentResolution.refreshRate;
             }
 
             public VRRManager(NativeApi api)
@@ -1040,7 +1054,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 bool changed = false;
 
                 var oldSupportedRefreshRates = m_SupportedRefreshRates;
-                var oldRefreshRate = m_CurrentRefreshRate;
+                var oldRefreshRate = m_LastSetRefreshRate;
 
                 UpdateRefreshRateInfo();
 
@@ -1068,10 +1082,8 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 {
                     lock (m_RefreshRateChangedLock)
                     {
-                        m_RefreshRateChanged = false;
+                        m_RefreshRateChanged = true;
                     }
-
-                    RefreshRateChanged.Invoke();
                 }
             }
 
@@ -1087,7 +1099,37 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 if (refreshRateChanged)
                 {
                     UpdateRefreshRateInfo();
-                    RefreshRateChanged.Invoke();
+
+                    var index = -1;
+
+                    for (var i = 0; i < m_SupportedRefreshRates.Length; ++i)
+                    {
+                        var rr = m_SupportedRefreshRates[i];
+
+                        if (rr == m_LastSetRefreshRate)
+                            index = i;
+                    }
+
+                    if (index != -1)
+                    {
+                        SetRefreshRateByIndexInternal(index);
+                    }
+                    else if (index == -1 && m_LastSetRefreshRate != -1)
+                    {
+                        // Previous set refresh rate is not in available in the refreshrate list.
+                        // Need to set 60Hz or lowest refresh rate possible.
+                        // User sets 48Hz, but 48Hz is not on list anymore, because user changed Setting App - Display - Smooth option.
+                        for (var i = 0; i < m_SupportedRefreshRates.Length; ++i)
+                        {
+                            var rr = m_SupportedRefreshRates[i];
+                            if (rr == 60)
+                            {
+                                SetRefreshRateByIndexInternal(i);
+                                break;
+                            }
+                        }
+                    }
+                    RefreshRateChanged?.Invoke();
                 }
             }
 
@@ -1096,11 +1138,32 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 
             public bool SetRefreshRateByIndex(int index)
             {
+                // Refreshrate potentially set by user
+                settings.automaticVRR = false;
+                return SetRefreshRateByIndexInternal(index);
+            }
+
+            private bool SetRefreshRateByIndexInternal(int index)
+            {
                 if (index >= 0 || index < SupportedRefreshRates.Length)
                 {
-                    if (m_Api.SetRefreshRate(SupportedRefreshRates[index]))
+                    var refreshRateFromIndex = SupportedRefreshRates[index];
+                    if (Application.targetFrameRate > 0 && index > 0 && SupportedRefreshRates[--index] > Application.targetFrameRate)
                     {
-                        m_CurrentRefreshRate = SupportedRefreshRates[index];
+                        GameSDKLog.Debug("SetRefreshRateByIndex tries to set the refreshRateTarget {0} way higher than the targetFrameRate {1} which is not recommended due to temperature increase and unused performance.", refreshRateFromIndex, Application.targetFrameRate);
+                    }
+                    if (!settings.highSpeedautomaticVRR)
+                    {
+                        if (refreshRateFromIndex > 60)
+                        {
+                            GameSDKLog.Debug("High-Speed VRR is not enabled in the settings. Setting a refreshrate ({0}Hz) over 60Hz is not permitted due to temperature reasons.", refreshRateFromIndex);
+                            return false;
+                        }
+                    }
+                    if (m_Api.SetRefreshRate(refreshRateFromIndex))
+                    {
+                        m_CurrentRefreshRate = refreshRateFromIndex;
+                        m_LastSetRefreshRate = refreshRateFromIndex;
                         return true;
                     }
                 }
@@ -1114,6 +1177,60 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 lock (m_RefreshRateChangedLock)
                 {
                     m_RefreshRateChanged = true;
+                }
+            }
+        }
+        internal class AutoVariableRefreshRate
+        {
+            SamsungAndroidProviderSettings settings = SamsungAndroidProviderSettings.GetSettings();
+            IVariableRefreshRate vrrManager;
+
+            public AutoVariableRefreshRate(IVariableRefreshRate vrrManagerInstance)
+            {
+                vrrManager = vrrManagerInstance;
+            }
+
+            // Temperature checks of hardware are around 5sec and we don't need to check that often.
+            float VRRUpdateTime = 10;
+            int lastRefreshRateIndex = -1;
+
+            public void UpdateAutoVRR()
+            {
+                VRRUpdateTime -= Time.unscaledDeltaTime;
+
+                if (VRRUpdateTime <= 0)
+                {
+                    VRRUpdateTime = 10;
+
+                    // targetFPS = 70 (in 48/60/96/120)-> vrr 96 never 120
+                    // targetFPS = 40 (in 48/60/96/120)-> vrr 60 never 96
+                    // targetFPS = 48/60/96/120 (in 48/60/96/120) -> vrr 48/60/96/12 never higher
+                    // targetFPS = 70 (in 48/60)-> 60
+                    var refreshRateIndex = vrrManager.SupportedRefreshRates.Length - 1;
+                    // we look if a targetFrameRate is set, even in vsync mode were target framerate is ignored. Otherwise we use maximum framerate
+                    if (Application.targetFrameRate > 0)
+                    {
+                        for (int i = 0; i < vrrManager.SupportedRefreshRates.Length; ++i)
+                        {
+                            if (Application.targetFrameRate > vrrManager.SupportedRefreshRates[i])
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                refreshRateIndex = i;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (lastRefreshRateIndex != refreshRateIndex)
+                    {
+                        lastRefreshRateIndex = refreshRateIndex;
+                        vrrManager.SetRefreshRateByIndex(refreshRateIndex);
+                        // automatic VRR gets disabled in SetRefreshRateByIndex and we want to ensure we still get updated.
+                        settings.automaticVRR = true;
+                    }
                 }
             }
         }

@@ -1,0 +1,5 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:Foldout text="VRR" value="True" name="vrr">
+        <Style src="AdaptivePerformanceExtension.uss" />
+    </ui:Foldout>
+</ui:UXML>

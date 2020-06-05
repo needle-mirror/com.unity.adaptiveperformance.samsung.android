@@ -42,6 +42,6 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
         /// Global instance to access the variable refresh API.
         /// May be null if variable refresh rate is not supported.
         /// </summary>
-        static public IVariableRefreshRate Instance { get; internal set; }
+        static public IVariableRefreshRate Instance { get; set; }
     }
 }
