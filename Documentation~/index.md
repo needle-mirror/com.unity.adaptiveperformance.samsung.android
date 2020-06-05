@@ -1,13 +1,13 @@
 # About the Adaptive Performance Samsung (Android) package
 
-The Adaptive Performance Samsung (Android) provider is a subsystem for [Adaptive Performance](https://docs.unity3d.com/Packages/com.unity.adaptiveperformance@latest/index.html), to extend Adaptive Performance to Samsung Android devices. It transmits device-specific information to the Adaptive Performance package, and enables you to receive data about the thermal state of a Samsung Android device.
+The Adaptive Performance Samsung (Android) provider is a subsystem for [Adaptive Performance](https://docs.unity3d.com/Packages/com.unity.adaptiveperformance@latest/index.html) to extend Adaptive Performance to Samsung Android devices. It transmits device-specific information to the Adaptive Performance system and enables you to receive data about the thermal state of a Samsung Android device.
 
 This package also provides access to a [Variable Refresh Rate](vrr.md) API that is supported by newer Samsung devices with high refresh rate displays.
 ## Installation
 
 Use the [Unity Package Manager](https://docs.unity3d.com/Packages/com.unity.package-manager-ui@latest/index.html) to install the **Adaptive Performance Samsung (Android)** package. Unity automatically installs the Adaptive Performance 2.0.0-preview package as a dependency of the Adaptive Performance Samsung (Android) package.
 
-To use the Adaptive Performance Samsung (Android) provider, you need to install the Adaptive Performance package and activate the provider in the Adaptive Performance section of the **Project Settings** window. For more information, see [Adaptive Performance package documentation](https://docs.unity3d.com/Packages/com.unity.adaptiveperformance@latest/index.html).
+To use the Adaptive Performance Samsung (Android) provider you need to install the Adaptive Performance package and activate the provider in the Adaptive Performance section of the **Project Settings** window. For more information, see [Adaptive Performance package documentation](https://docs.unity3d.com/Packages/com.unity.adaptiveperformance@latest/index.html).
 
 For information on what's new in the latest version of Adaptive Performance Samsung (Android), see the [Changelog](../changelog/CHANGELOG.html).
 
@@ -28,9 +28,9 @@ Adaptive Performance Samsung (Android) currently supports the following Samsung 
 
 * All old and new Samsung Galaxy models
 
-It supports those devices with Samsung GameSDK 3.0+.
+It supports those devices with Samsung GameSDK 3.2+.
 
-Variable Refresh Rate is currently only supported on Galaxy S20.
+[Variable Refresh Rate](vrr.md) is currently only supported on Galaxy S20.
 
 ## Samsung GameSDK
 

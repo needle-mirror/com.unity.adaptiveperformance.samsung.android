@@ -15,17 +15,21 @@ namespace UnityEditor.AdaptivePerformance.Samsung.Android.Editor
         const string k_AutomaticVRR = "m_AutomaticVRR";
         const string k_HighSpeedVRR = "m_HighSpeedVRR";
 
+        static GUIContent s_ShowVRRSettings = EditorGUIUtility.TrTextContent(L10n.Tr("VRR Settings"));
         static GUIContent s_SamsungProviderLoggingLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Samsung Provider Logging"), L10n.Tr("Only active in development mode."));
         static GUIContent s_AutomaticVRRLabel = EditorGUIUtility.TrTextContent(L10n.Tr("Automatic VRR"), L10n.Tr("Enable Automatic Variable Refresh Rate. Only enabled if VRR is supported on the target device."));
         static GUIContent s_HighSpeedVRRLabel = EditorGUIUtility.TrTextContent(L10n.Tr("High-Speed VRR"), L10n.Tr("Allow High-Speed Variable Refresh Rate. It is required if you want to use variable refresh rates higher than 60hz. Can increase device temperature when activated."));
 
         static string s_UnsupportedInfo = L10n.Tr("Adaptive Performance Samsung Android settings not available on this platform.");
         static string s_HighSpeedVRRInfo = L10n.Tr("High-Speed VRR can increase device temperature.");
-        static string s_AutoVRRInfo = L10n.Tr("Auto VRR only works with V-Sync disabled which is currently enalbed. See QualitySettings.vSyncCount in the Quality Settings window for more information.");
+        static string s_AutoVRRInfo = L10n.Tr("Auto VRR only works with VSync disabled which is currently enabled. See QualitySettings.vSyncCount in the Quality Settings window for more information.");
 
         SerializedProperty m_SamsungProviderLoggingProperty;
         SerializedProperty m_AutomaticVRRProperty;
         SerializedProperty m_HighSpeedVRRProperty;
+
+        bool m_ShowVRRSettings = true;
+
 
         /// <summary>
         /// Override of Editor callback to display custom settings.
@@ -50,20 +54,28 @@ namespace UnityEditor.AdaptivePerformance.Samsung.Android.Editor
                 DisplayBaseRuntimeSettings();
                 if (m_ShowRuntimeSettings)
                 {
+                    GUI.enabled = !EditorApplication.isPlayingOrWillChangePlaymode;
                     EditorGUI.indentLevel++;
-                    if (m_HighSpeedVRRProperty.boolValue)
+                    m_ShowVRRSettings = EditorGUILayout.Foldout(m_ShowVRRSettings, s_ShowVRRSettings);
+                    if (m_ShowVRRSettings)
                     {
-                        EditorGUILayout.HelpBox(s_HighSpeedVRRInfo, MessageType.Warning);
+                        EditorGUI.indentLevel++;
+                        if (m_HighSpeedVRRProperty.boolValue)
+                        {
+                            EditorGUILayout.HelpBox(s_HighSpeedVRRInfo, MessageType.Warning);
+                        }
+                        EditorGUILayout.PropertyField(m_HighSpeedVRRProperty, s_HighSpeedVRRLabel);
+                        if (QualitySettings.vSyncCount > 0)
+                        {
+                            EditorGUILayout.HelpBox(s_AutoVRRInfo, MessageType.Info);
+                            GUI.enabled = false;
+                        }
+                        EditorGUILayout.PropertyField(m_AutomaticVRRProperty, s_AutomaticVRRLabel);
+                        GUI.enabled = true;
+                        EditorGUI.indentLevel--;
                     }
-                    EditorGUILayout.PropertyField(m_HighSpeedVRRProperty, s_HighSpeedVRRLabel);
-                    if (QualitySettings.vSyncCount > 0)
-                    {
-                        EditorGUILayout.HelpBox(s_AutoVRRInfo, MessageType.Info);
-                        GUI.enabled = false;
-                    }
-                    EditorGUILayout.PropertyField(m_AutomaticVRRProperty, s_AutomaticVRRLabel);
-                    GUI.enabled = true;
                     EditorGUI.indentLevel--;
+                    GUI.enabled = true;
                 }
 
                 EditorGUILayout.Space();
@@ -72,7 +84,9 @@ namespace UnityEditor.AdaptivePerformance.Samsung.Android.Editor
                 if (m_ShowDevelopmentSettings)
                 {
                     EditorGUI.indentLevel++;
+                    GUI.enabled = !EditorApplication.isPlayingOrWillChangePlaymode;
                     EditorGUILayout.PropertyField(m_SamsungProviderLoggingProperty, s_SamsungProviderLoggingLabel);
+                    GUI.enabled = true;
                     EditorGUI.indentLevel--;
                 }
             }
