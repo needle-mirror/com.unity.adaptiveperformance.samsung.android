@@ -59,6 +59,18 @@ namespace UnityEditor.AdaptivePerformance.Samsung.Android.Editor
             VariableRefreshRate.Instance = m_vrrManager;
 
             var tree = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>("Packages/com.unity.adaptiveperformance.samsung.android/Editor/DeviceSimulator/AdaptivePerformanceExtension.uxml");
+            if (tree == null)
+            {
+                Label warningLabel = new Label("Simulator provider is not installed. Please install and enable the provider in Project Settings > Adaptive Performance > Standalone >  Providers. After installation, close and reopen the Device Simulator to take effect.");
+                warningLabel.style.whiteSpace = WhiteSpace.Normal;
+                m_ExtensionFoldout.Add(warningLabel);
+#if UNITY_2021_1_OR_NEWER
+                return m_ExtensionFoldout;
+#else
+                return;
+#endif
+            }
+
             m_ExtensionFoldout.Add(tree.CloneTree());
 
             m_SettingsFoldout = m_ExtensionFoldout.Q<Foldout>("vrr-settings");
@@ -168,6 +180,9 @@ namespace UnityEditor.AdaptivePerformance.Samsung.Android.Editor
 
         public void OnBeforeSerialize()
         {
+            if (m_SettingsFoldout == null)
+                return;
+
             m_SerializationStates.settingsFoldout = m_SettingsFoldout.value;
             m_SerializationStates.vrrFoldout = m_VrrFoldout.value;
             m_SerializationStates.androidSystemFoldout = m_AndroidSystemFoldout.value;

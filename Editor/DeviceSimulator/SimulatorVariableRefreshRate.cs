@@ -255,7 +255,7 @@ namespace UnityEditor.AdaptivePerformance.Simulator.Editor
 
         private bool SetRefreshRateByIndexInternal(int index)
         {
-            if (index >= 0 || index < SupportedRefreshRates.Length)
+            if (index >= 0 && index < SupportedRefreshRates.Length)
             {
                 var refreshRateFromIndex = SupportedRefreshRates[index];
                 if (Application.targetFrameRate > 0 && index > 0 && SupportedRefreshRates[--index] > Application.targetFrameRate)

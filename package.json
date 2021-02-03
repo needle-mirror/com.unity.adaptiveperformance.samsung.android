@@ -2,7 +2,7 @@
   "name": "com.unity.adaptiveperformance.samsung.android",
   "displayName": "Adaptive Performance Samsung Android",
   "description": "The Adaptive Performance Samsung (Android) provider is a subsystem for Adaptive Performance to extend Adaptive Performance to Samsung Android devices. It transmits device-specific information to the Adaptive Performance system and enables you to receive data about the thermal state of a Samsung Android device. \n\nBy installing this package, you agree to the terms and conditions of the Samsung GameSDK End User License Agreement found under \"View licenses\" above.",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "unity": "2019.4",
   "keywords": [
     "mobile",
@@ -21,14 +21,14 @@
     "scaler"
   ],
   "dependencies": {
-    "com.unity.adaptiveperformance": "2.1.0"
+    "com.unity.adaptiveperformance": "2.1.1"
   },
   "upmCi": {
-    "footprint": "121bc370e03a789677f3abf1c74ac646779bf974"
+    "footprint": "7e00b4913321abcc39dd06ca9d87360ad8b353b6"
   },
   "repository": {
     "url": "https://github.cds.internal.unity3d.com/unity/com.unity.adaptiveperformance.samsung.android.git",
     "type": "git",
-    "revision": "54d1d410c1c76988663fd60c931894f4b63909a4"
+    "revision": "1f6e24bfb72ff19098e006519b33385bbd08a20a"
   }
 }
