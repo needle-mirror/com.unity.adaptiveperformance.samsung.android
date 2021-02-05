@@ -1,9 +1,9 @@
 {
     "name": "Unity.AdaptivePerformance.Samsung.Android",
     "references": [
-        "GUID:7dbf32976982c98448af054f2512cb79",
-        "GUID:9604b18aafdbc9346bceb5e19ac9c746"
+        "Unity.AdaptivePerformance"
     ],
+    "optionalUnityReferences": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": true,
@@ -11,6 +11,5 @@
     "precompiledReferences": [],
     "autoReferenced": true,
     "defineConstraints": [],
-    "versionDefines": [],
-    "noEngineReferences": false
+    "versionDefines": []
 }
