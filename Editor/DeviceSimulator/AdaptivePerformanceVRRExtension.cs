@@ -110,7 +110,7 @@ namespace UnityEditor.AdaptivePerformance.Samsung.Android.Editor
                 }
             });
 
-            var rrChoices = new List<string> {"120", "96", "60", "48"};
+            var rrChoices = new List<string> {"48", "60", "96", "120"};
             m_DisplayRefreshRates = new PopupField<string>("Display Refresh Rate", rrChoices, 2);
             m_DisplayRefreshRates.tooltip = "Select the Display Refresh Rate of the Android Settings to simulate.";
             m_AndroidSystemFoldout.Add(m_DisplayRefreshRates);

@@ -11,7 +11,7 @@ namespace UnityEngine.AdaptivePerformance
         /// <summary>
         /// Returns the name of the scaler.
         /// </summary>
-        public override string Name  => "Adaptive VRR";
+        public override string Name  => "Adaptive Variable Refresh Rate";
 
         bool m_AdaptiveVRREnabled = false;
 

@@ -264,7 +264,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             MaxCpuPerformanceLevel = 3;
             MaxGpuPerformanceLevel = 3;
 
-            m_Api = new NativeApi(OnPerformanceWarning, OnPerformanceLevelTimeout, () => (VariableRefreshRate.Instance as VRRManager)?.OnRefreshRateChanged());
+            m_Api = new NativeApi(OnPerformanceWarning, OnPerformanceLevelTimeout, () => (VariableRefreshRate.Instance as VRRManager)?.OnRefreshRateChanged(), OnCpuPerformanceBoostModeTimeout, OnGpuPerformanceBoostModeTimeout);
             m_AsyncUpdater = new AsyncUpdater();
             m_SkinTemp = new AsyncValue<double>(m_AsyncUpdater, -1.0, 2.7f, () => GetHighPrecisionSkinTempLevel());
             m_GPUTime = new AsyncValue<double>(m_AsyncUpdater, -1.0, 0.0f, () => m_Api.GetGpuFrameTime());
@@ -295,9 +295,32 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             }
         }
 
+        private void OnCpuPerformanceBoostModeTimeout()
+        {
+            lock (m_DataLock)
+            {
+                m_Data.ChangeFlags |= Feature.CpuPerformanceBoost;
+                m_Data.CpuPerformanceBoost = false;
+            }
+        }
+
+        private void OnGpuPerformanceBoostModeTimeout()
+        {
+            lock (m_DataLock)
+            {
+                m_Data.ChangeFlags |= Feature.GpuPerformanceBoost;
+                m_Data.GpuPerformanceBoost = false;
+            }
+        }
+
         private float GetHighPrecisionSkinTempLevel()
         {
             return (float)m_Api.GetHighPrecisionSkinTempLevel();
+        }
+
+        private int GetClusterInfo()
+        {
+            return m_Api.GetClusterInfo();
         }
 
         private void ImmediateUpdateTemperature()
@@ -332,7 +355,20 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             {
                 if (TryParseVersion(m_Api.GetVersion(), out m_Version))
                 {
-                    if (m_Version >= new Version(3, 2))
+                    if (m_Version >= new Version(3, 5))
+                    {
+                        initialized = true;
+                        MaxCpuPerformanceLevel = m_Api.GetMaxCpuPerformanceLevel();
+                        MaxGpuPerformanceLevel = m_Api.GetMaxGpuPerformanceLevel();
+                        Capabilities |= Feature.CpuPerformanceBoost | Feature.GpuPerformanceBoost;
+                    }
+                    else if (m_Version >= new Version(3, 4))
+                    {
+                        initialized = true;
+                        MaxCpuPerformanceLevel = m_Api.GetMaxCpuPerformanceLevel();
+                        MaxGpuPerformanceLevel = m_Api.GetMaxGpuPerformanceLevel();
+                    }
+                    else if (m_Version >= new Version(3, 2))
                     {
                         initialized = true;
                         MaxCpuPerformanceLevel = m_Api.GetMaxCpuPerformanceLevel();
@@ -391,6 +427,25 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 else if (currentTempLevel >= 5)
                     OnPerformanceWarning(WarningLevel.ThrottlingImminent);
             }
+
+            if (m_Version >= new Version(3, 5))
+            {
+                // Cluster info is not available in the same frame as game sdk init so we need to wait a bit.
+                int clusterInfo = m_Api.GetClusterInfo();
+                if (clusterInfo != -999)
+                {
+                    var aClusterInfo = new ClusterInfo();
+                    aClusterInfo.BigCore = clusterInfo / 100;
+                    aClusterInfo.MediumCore = (clusterInfo % 100) / 10;
+                    aClusterInfo.LittleCore = (clusterInfo % 100) % 10;
+                    lock (m_DataLock)
+                    {
+                        m_Data.ClusterInfo = aClusterInfo;
+                        m_Data.ChangeFlags |= Feature.ClusterInfo;
+                    }
+                    Capabilities |= Feature.ClusterInfo;
+                }
+            }
         }
 
         override public void Stop()
@@ -411,7 +466,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             m_AsyncUpdater.Dispose();
         }
 
-        public override string Stats => $"SkinTemp={m_SkinTemp?.value ?? -1} GPUTime={m_GPUTime}";
+        public override string Stats => $"SkinTemp={m_SkinTemp?.value ?? -1} GPUTime={m_GPUTime?.value ?? -1}";
 
         override public PerformanceDataRecord Update()
         {
@@ -528,15 +583,65 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 if (m_Data.GpuPerformanceLevel != oldGpuLevel)
                     m_Data.ChangeFlags |= Feature.GpuPerformanceLevel;
 
-                if (result == 2)
+                if (result > 1)
                 {
-                    GameSDKLog.Debug($"Thermal Mitigation Logic is working and CPU({cpuLevel})/GPU({gpuLevel}) level change request was not approved.");
+                    if (result == 2)
+                    {
+                        GameSDKLog.Debug($"Thermal Mitigation Logic is working and CPU({cpuLevel})/GPU({gpuLevel}) level change request was not approved.");
+                    }
+                    else if (result == 3)
+                    {
+                        GameSDKLog.Debug($"CPU or GPU Boost mode is active and CPU({cpuLevel})/GPU({gpuLevel}) level change request was not approved.");
+                    }
+
                     m_Data.PerformanceLevelControlAvailable = false;
                     m_Data.ChangeFlags |= Feature.PerformanceLevelControl;
                     m_PerformanceLevelControlSystemChange = true;
                 }
             }
             return success;
+        }
+
+        public bool EnableCpuBoost()
+        {
+            var result = m_Api.EnableCpuBoost();
+
+            lock (m_DataLock)
+            {
+                var oldPerformanceBoost = m_Data.CpuPerformanceBoost;
+                m_Data.CpuPerformanceBoost = result;
+                if (m_Data.CpuPerformanceBoost != oldPerformanceBoost)
+                    m_Data.ChangeFlags |= Feature.CpuPerformanceBoost;
+
+                if (result)
+                {
+                    m_Data.PerformanceLevelControlAvailable = false;
+                    m_Data.ChangeFlags |= Feature.PerformanceLevelControl;
+                    m_PerformanceLevelControlSystemChange = true;
+                }
+            }
+            return result;
+        }
+
+        public bool EnableGpuBoost()
+        {
+            var result = m_Api.EnableGpuBoost();
+
+            lock (m_DataLock)
+            {
+                var oldPerformanceBoost = m_Data.GpuPerformanceBoost;
+                m_Data.GpuPerformanceBoost = result;
+                if (m_Data.GpuPerformanceBoost != oldPerformanceBoost)
+                    m_Data.ChangeFlags |= Feature.GpuPerformanceBoost;
+
+                if (result)
+                {
+                    m_Data.PerformanceLevelControlAvailable = false;
+                    m_Data.ChangeFlags |= Feature.PerformanceLevelControl;
+                    m_PerformanceLevelControlSystemChange = true;
+                }
+            }
+            return result;
         }
 
         public void ApplicationPause() {}
@@ -584,20 +689,25 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             static private IntPtr s_GameSDKRawObjectID;
             static private IntPtr s_GetGpuFrameTimeID;
             static private IntPtr s_GetHighPrecisionSkinTempLevelID;
+            static private IntPtr s_GetClusterInfolID;
 
             static private bool s_isAvailable = false;
             static private jvalue[] s_NoArgs = new jvalue[0];
 
             private Action<WarningLevel> PerformanceWarningEvent;
             private Action PerformanceLevelTimeoutEvent;
+            private Action CpuPerformanceBoostReleasedByTimeoutEvent;
+            private Action GpuPerformanceBoostReleasedByTimeoutEvent;
             private Action RefreshRateChangedEvent;
 
-            public NativeApi(Action<WarningLevel> sustainedPerformanceWarning, Action sustainedPerformanceTimeout, Action refreshRateChanged)
+            public NativeApi(Action<WarningLevel> sustainedPerformanceWarning, Action sustainedPerformanceTimeout, Action refreshRateChanged, Action cpuPerformanceBoostReleasedByTimeout, Action gpuPerformanceBoostReleasedByTimeout)
                 : base("com.samsung.android.gamesdk.GameSDKManager$Listener")
             {
                 PerformanceWarningEvent = sustainedPerformanceWarning;
                 PerformanceLevelTimeoutEvent = sustainedPerformanceTimeout;
                 RefreshRateChangedEvent = refreshRateChanged;
+                CpuPerformanceBoostReleasedByTimeoutEvent = cpuPerformanceBoostReleasedByTimeout;
+                GpuPerformanceBoostReleasedByTimeoutEvent = gpuPerformanceBoostReleasedByTimeout;
                 StaticInit();
             }
 
@@ -618,6 +728,20 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             {
                 GameSDKLog.Debug("Listener: onReleasedByTimeout()");
                 PerformanceLevelTimeoutEvent();
+            }
+
+            [Preserve]
+            void onReleasedCpuBoost()
+            {
+                GameSDKLog.Debug("Listener: onReleasedCpuBoost()");
+                CpuPerformanceBoostReleasedByTimeoutEvent();
+            }
+
+            [Preserve]
+            void onReleasedGpuBoost()
+            {
+                GameSDKLog.Debug("Listener: onReleasedGPUBoost()");
+                GpuPerformanceBoostReleasedByTimeoutEvent();
             }
 
             [Preserve]
@@ -668,6 +792,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 
                         s_GetGpuFrameTimeID = GetJavaMethodID(classID, "getGpuFrameTime", "()D");
                         s_GetHighPrecisionSkinTempLevelID = GetJavaMethodID(classID, "getHighPrecisionSkinTempLevel", "()D");
+                        s_GetClusterInfolID =  GetJavaMethodID(classID, "getClusterInfo", "()I");
 
                         if (s_GetGpuFrameTimeID == (IntPtr)0 || s_GetHighPrecisionSkinTempLevelID == (IntPtr)0)
                             s_isAvailable = false;
@@ -831,6 +956,56 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 catch (Exception x)
                 {
                     GameSDKLog.Debug("[Exception] GameSDK.setFreqLevels({0}, {1}) failed: {2}", cpu, gpu, x);
+                }
+                return result;
+            }
+
+            public bool EnableCpuBoost()
+            {
+                bool result = false;
+                try
+                {
+                    result = s_GameSDK.Call<bool>("setCpuBoostMode", 1);
+                    GameSDKLog.Debug("setCpuBoostMode(1) -> {0}", result);
+                }
+                catch (Exception x)
+                {
+                    GameSDKLog.Debug("[Exception] GameSDK.setCpuBoostMode(1) failed: {0}", x);
+                }
+                return result;
+            }
+
+            public bool EnableGpuBoost()
+            {
+                bool result = false;
+                try
+                {
+                    result = s_GameSDK.Call<bool>("setGpuBoostMode", 1);
+                    GameSDKLog.Debug("setGpuBoostMode(1) -> {0}", result);
+                }
+                catch (Exception x)
+                {
+                    GameSDKLog.Debug("[Exception] GameSDK.setGpuBoostMode(1) failed: {0}", x);
+                }
+                return result;
+            }
+
+            public int GetClusterInfo()
+            {
+                int result = -999;
+                try
+                {
+                    result = AndroidJNI.CallIntMethod(s_GameSDKRawObjectID, s_GetClusterInfolID, s_NoArgs);
+                    if (AndroidJNI.ExceptionOccurred() != IntPtr.Zero)
+                    {
+                        AndroidJNI.ExceptionDescribe();
+                        AndroidJNI.ExceptionClear();
+                    }
+                    GameSDKLog.Debug("getClusterInfo() -> {0}", result);
+                }
+                catch (Exception x)
+                {
+                    GameSDKLog.Debug("[Exception] GameSDK.getClusterInfo() failed: {0}", x);
                 }
                 return result;
             }
