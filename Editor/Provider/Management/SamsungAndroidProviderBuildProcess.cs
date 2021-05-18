@@ -3,11 +3,13 @@ using System.IO;
 using System.Linq;
 
 using UnityEditor;
+using UnityEditor.Android;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
 
 using UnityEngine;
 using UnityEngine.AdaptivePerformance;
+using UnityEditor.AdaptivePerformance.Editor;
 using UnityEngine.AdaptivePerformance.Samsung.Android;
 
 namespace UnityEditor.AdaptivePerformance.Samsung.Android.Editor
@@ -30,8 +32,9 @@ namespace UnityEditor.AdaptivePerformance.Samsung.Android.Editor
     /// * <see href="https://docs.unity3d.com/ScriptReference/EditorBuildSettings.html">EditorBuildSettings</see>
     /// * <see href="https://docs.unity3d.com/ScriptReference/PlayerSettings.GetPreloadedAssets.html">PlayerSettings.GetPreloadedAssets</see>
     /// * <see href="https://docs.unity3d.com/ScriptReference/PlayerSettings.SetPreloadedAssets.html">PlayerSettings.SetPreloadedAssets</see>
+    /// * <see href="https://docs.unity3d.com/ScriptReference/Android.IPostGenerateGradleAndroidProject.html">IPostGenerateGradleAndroidProject</see>
     /// </summary>
-    public class SamsungAndroidProviderBuildProcess : IPreprocessBuildWithReport, IPostprocessBuildWithReport
+    public class SamsungAndroidProviderBuildProcess : IPreprocessBuildWithReport, IPostprocessBuildWithReport, IPostGenerateGradleAndroidProject
     {
         /// <summary>
         /// Override of <see cref="IPreprocessBuildWithReport"/> and <see cref="IPostprocessBuildWithReport"/>.
@@ -98,6 +101,16 @@ namespace UnityEditor.AdaptivePerformance.Samsung.Android.Editor
             // Always remember to clean up preloaded assets after build to make sure we don't
             // dirty later builds with assets that may not be needed or are out of date.
             CleanOldSettings();
+        }
+
+        /// <summary>
+        /// Implementation of <see cref="IPostGenerateGradleAndroidProject"/>
+        /// </summary>
+        /// <param name="path"></param>
+        public void OnPostGenerateGradleAndroidProject(string path)
+        {
+            var setting = AdaptivePerformanceBuildUtils.GetWantedStartupBoostSetting(SamsungAndroidProviderSettings.GetSettings());
+            AdaptivePerformanceBuildUtils.UpdateBootConfigBoostSetting(path, "adaptive-performance-samsung-boost-launch", setting);
         }
     }
 }

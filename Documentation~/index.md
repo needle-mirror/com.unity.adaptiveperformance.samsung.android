@@ -12,16 +12,17 @@ For information on what's new in the latest version of Adaptive Performance Sams
 
 ## Device support
 
-This version of the Adaptive Performance Samsung (Android package) is compatible with Unity Editor versions 2019 LTS and later (2020.2 and later recommended).
+This version of the Adaptive Performance Samsung (Android package) is compatible with Unity Editor versions 2021.2 and later.
 
 
-Adaptive Performance Samsung (Android) currently supports the following Samsung devices running Android 10:
+Adaptive Performance Samsung (Android) currently supports the following Samsung devices running Android 10+:
 
 * All old and new Samsung Galaxy models
 
 It supports those devices with Samsung GameSDK 3.2+.
 
-[Variable Refresh Rate](vrr.md) is currently only supported on Galaxy S20.
+[Variable Refresh Rate](vrr.md) is currently only supported on Galaxy S20, N20, S21.
+Boost Mode and Cluster Info is currently only supported on Samsung GameSDK 3.5+
 
 ## Samsung GameSDK
 
@@ -30,3 +31,6 @@ When you enable logging, Adaptive Performance prints the version of the Samsung 
 ```
 Adaptive Performance: Subsystem version=3.2
 ```
+
+## What's New?
+For information on the latest changes and additions in this version of Adaptive Performance, see  [What's new](whats-new.md).

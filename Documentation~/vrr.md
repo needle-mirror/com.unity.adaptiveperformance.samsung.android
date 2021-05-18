@@ -14,14 +14,23 @@ The Unity core API `Screent.currentResolution.refreshRate` is automatically upda
 
 ### Unity Support
 
-This version of VRR is compatible with Unity Editor versions 2019 LTS and later, specifically:
-
-* Unity 2020.2.0a7+
-* Unity 2020.1.0b5+
-* Unity 2019.3.11f1+
+This version of VRR is compatible with Unity Editor versions 2021.2 and later.
 
 ### Device Support
 
 Variable Refresh Rate is currently only supported on following devices:
 
-- Galaxy S20 with GameSDK 3.2 (April 2020 update).
+- Galaxy S20 & S21 with GameSDK 3.2+ (April 2020 update).
+- Galaxy Note 20 with GameSDK 3.2+ (April 2020 update).
+
+## Project Settings
+
+To enable proper timing for Adaptive Performance, you need to enable the **Frame Timing Stats** option (menu: **Edit &gt; Project Settings &gt; Player &gt; Other Settings**).
+
+If you want to use `Application.targetFrameRate` to limit the target frame rate, set the **VSync Count** option under **Edit &gt; Project Settings &gt; Quality &gt; Other** to **Don't Sync**.
+
+Unity has several quality levels in the quality settings. We recommend to switch the **VSync Count** to **Don't Sync** for each quality level. This will avoid issues with Adaptive Performance features like Adaptive Framerate and limiting the target framerate with `Application.targetFrameRate`.
+
+### Optimized Frame Pacing
+
+Adapitve Performance and Variable Refresh Rate is not compatible with framce pacing and we recommend to dissable **Optimized Frame Pacing** under **Edit &gt; Project Settings &gt; Player &gt; Resolution and Presentation**.
