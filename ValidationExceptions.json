@@ -1,9 +1,0 @@
-{
-    "ErrorExceptions":
-    [
-        {
-        	  "ValidationTest": "Package Unity Version Validation",
-              "PackageVersion": "1.1.10"
-        }
-    ]
-}
