@@ -671,10 +671,16 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
         static void RegisterDescriptor()
         {
             if (!SystemInfo.deviceModel.StartsWith("samsung", StringComparison.OrdinalIgnoreCase))
+            {
+                GameSDKLog.Debug($"The device {SystemInfo.deviceModel} is not a supported Samsung phone. This provider will not run. Aborting registering the Adaptive Performance provider descriptor.");
                 return;
+            }
 
             if (!NativeApi.IsAvailable())
+            {
+                GameSDKLog.Debug($"The native API for this provider is not available. Aborting registering the Adaptive Performance provider descriptor.");
                 return;
+            }
 
             AdaptivePerformanceSubsystemDescriptor.RegisterDescriptor(new AdaptivePerformanceSubsystemDescriptor.Cinfo
             {
@@ -779,8 +785,9 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                         if (s_GameSDK != null)
                             s_isAvailable = s_GameSDK.CallStatic<bool>("isAvailable");
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
+                        GameSDKLog.Debug($"GameSDK is not available due to {ex} Aborting Adaptive Performance initialization.");
                         s_isAvailable = false;
                         s_GameSDK = null;
                     }

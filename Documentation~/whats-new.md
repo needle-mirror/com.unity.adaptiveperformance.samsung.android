@@ -4,7 +4,7 @@ Summary of changes in Adaptive Performance package version 4.0.0.
 The main updates in this release include:
 
 ##Added
-* 
+*
 
 ## Updated
 * Documentation
