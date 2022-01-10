@@ -21,7 +21,22 @@ Adaptive Performance Samsung (Android) currently supports the following Samsung 
 
 It supports those devices with Samsung GameSDK 3.2+.
 
-[Variable Refresh Rate](vrr.md) is currently only supported on Galaxy S20.
+|**Series**|**Models**|
+|:---|:---|
+|Galaxy S| Galaxy S10e / S10 / S10+<br> Galaxy S10 Lite<br> Galaxy S20 / S20+ / S20 Ultra<br> Galaxy S20 Lite<br> Galaxy S21 / S21+ / S21 Ultra |
+|Galaxy Note| Galaxy Note9<br> Galaxy Note10 / Note10+<br> Galaxy Note10 Lite<br> Galaxy Note20 / Note20 Ultra|
+|Galaxy Z| Galaxy Z Fold2<br> Galaxy Z Fold2|
+|Galaxy A| Galaxy A10s<br> Galaxy A11<br> Galaxy A21s<br> Galaxy A31<br> Galaxy A41<br> Galaxy A50s<br> Galaxy A51<br> Galaxy A51 5G<br> Galaxy A71<br> Galaxy A71 5G<br> Galaxy A80<br> Galaxy A8 2018<br> Galaxy A9 2018<br> Galaxy A9 2018<br> Galaxy A90 5G|
+|Galaxy Xcover| Galaxy Xcover 4s<br> Galaxy Xcover Pro|
+|Galaxy M| Galaxy M11<br> Galaxy M30s<br> Galaxy M31s|
+|Galaxy Tab| Galaxy Tab S6<br> Galaxy Tab S7<br>Galaxy Tab S7+|
+
+Support status for each model could be different by the selling area and the OS version of the device.
+
+[Variable Refresh Rate](vrr.md) is currently only supported on Galaxy S20, N20, S21.
+Boost Mode and Cluster Info is currently only supported on Samsung GameSDK 3.5+ (Android 12)
+
+For more information please also visit the [Samsung GameDev website](https://developer.samsung.com/galaxy-gamedev/adaptive-performance.html).
 
 ## Samsung GameSDK
 
