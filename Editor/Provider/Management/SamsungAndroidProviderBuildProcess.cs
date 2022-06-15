@@ -51,8 +51,8 @@ namespace UnityEditor.AdaptivePerformance.Samsung.Android.Editor
                 return;
 
             var oldSettings = from s in preloadedAssets
-                where s != null && s.GetType() == typeof(SamsungAndroidProviderSettings)
-                select s;
+                              where s != null && s.GetType() == typeof(SamsungAndroidProviderSettings)
+                              select s;
 
             if (oldSettings != null && oldSettings.Any())
             {

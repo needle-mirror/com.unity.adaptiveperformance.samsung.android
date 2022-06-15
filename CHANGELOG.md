@@ -4,6 +4,14 @@ All notable changes to this package will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [2.2.4] - 2022-06-15
+
+### Added
+- Fix bug where Adaptive Performance Samsung Provider is not deinitialized properly after not being successfully initialized due to lack of Samsung GameSDK.
+
+### Changed
+- Improved handling for GameSDK APIs that may not be available on certain devices.
+
 ## [2.2.2] - 2022-01-10
 
 ### Added
