@@ -11,5 +11,6 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
         /// Key used to store and retrieve custom configuration settings from EditorBuildSettings.
         /// </summary>
         public const string k_SettingsKey = "com.unity.adaptiveperformance.samsung.android.provider_settings";
+
     }
 }
