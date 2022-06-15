@@ -248,16 +248,23 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
         private float m_MinTempLevel = 0.0f;
         private float m_MaxTempLevel = 10.0f;
         bool m_PerformanceLevelControlSystemChange = false;
+        bool m_AllowPerformanceLevelControlChanges = true;
 
         private AutoVariableRefreshRate m_AutoVariableRefreshRate;
 
-        override public IApplicationLifecycle ApplicationLifecycle { get { return this; } }
-        override public IDevicePerformanceLevelControl PerformanceLevelControl { get { return this; } }
+        public override IApplicationLifecycle ApplicationLifecycle { get { return this; } }
+        public override IDevicePerformanceLevelControl PerformanceLevelControl { get { return this; } }
 
         public int MaxCpuPerformanceLevel { get; set; }
         public int MaxGpuPerformanceLevel { get; set; }
 
         static SamsungAndroidProviderSettings settings = SamsungAndroidProviderSettings.GetSettings();
+
+        /// <summary>
+        /// InvalidOperation is the return value of an SDK API call when the feature is not available.
+        /// </summary>
+        /// <value>-999</value>
+        const int k_InvalidOperation = -999;
 
         public SamsungGameSDKAdaptivePerformanceSubsystem()
         {
@@ -349,7 +356,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             return true;
         }
 
-        override public void Start()
+        public override void Start()
         {
             if (m_Api.Initialize())
             {
@@ -381,7 +388,23 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                     }
                 }
 
-                m_Data.PerformanceLevelControlAvailable = true;
+                if (MaxCpuPerformanceLevel == k_InvalidOperation)
+                {
+                    MaxCpuPerformanceLevel = Constants.UnknownPerformanceLevel;
+                    Capabilities &= ~Feature.CpuPerformanceLevel;
+
+                    m_AllowPerformanceLevelControlChanges = false;
+                }
+
+                if (MaxGpuPerformanceLevel == k_InvalidOperation)
+                {
+                    MaxGpuPerformanceLevel = Constants.UnknownPerformanceLevel;
+                    Capabilities &= ~Feature.GpuPerformanceLevel;
+
+                    m_AllowPerformanceLevelControlChanges = false;
+                }
+
+                m_Data.PerformanceLevelControlAvailable = m_AllowPerformanceLevelControlChanges;
             }
 
             if (initialized)
@@ -448,7 +471,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             }
         }
 
-        override public void Stop()
+        public override void Stop()
         {
         }
 
@@ -468,7 +491,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 
         public override string Stats => $"SkinTemp={m_SkinTemp?.value ?? -1} GPUTime={m_GPUTime?.value ?? -1}";
 
-        override public PerformanceDataRecord Update()
+        public override PerformanceDataRecord Update()
         {
             // GameSDK API is very slow (~4ms per call), so update those numbers once per frame from another thread
 
@@ -489,11 +512,9 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 var temperatureLevel = (float)m_SkinTemp.value;
                 if (temperatureLevel < 5)
                 {
-                    m_PerformanceLevelControlSystemChange = false;
                     lock (m_DataLock)
                     {
-                        m_Data.PerformanceLevelControlAvailable = true;
-                        m_Data.ChangeFlags |= Feature.PerformanceLevelControl;
+                        DisableSystemControl();
                     }
                 }
             }
@@ -552,6 +573,10 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 
         public bool SetPerformanceLevel(ref int cpuLevel, ref int gpuLevel)
         {
+            if ((Capabilities & Feature.CpuPerformanceLevel) != Feature.CpuPerformanceLevel ||
+                (Capabilities & Feature.GpuPerformanceLevel) != Feature.GpuPerformanceLevel)
+                return false;
+
             if (cpuLevel < 0)
                 cpuLevel = 0;
             else if (cpuLevel > MaxCpuPerformanceLevel)
@@ -578,10 +603,13 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 m_Data.CpuPerformanceLevel = success ? cpuLevel : Constants.UnknownPerformanceLevel;
                 m_Data.GpuPerformanceLevel = success ? gpuLevel : Constants.UnknownPerformanceLevel;
 
-                if (m_Data.CpuPerformanceLevel != oldCpuLevel)
-                    m_Data.ChangeFlags |= Feature.CpuPerformanceLevel;
-                if (m_Data.GpuPerformanceLevel != oldGpuLevel)
-                    m_Data.ChangeFlags |= Feature.GpuPerformanceLevel;
+                if (success)
+                {
+                    if (m_Data.CpuPerformanceLevel != oldCpuLevel)
+                        m_Data.ChangeFlags |= Feature.CpuPerformanceLevel;
+                    if (m_Data.GpuPerformanceLevel != oldGpuLevel)
+                        m_Data.ChangeFlags |= Feature.GpuPerformanceLevel;
+                }
 
                 if (result > 1)
                 {
@@ -594,9 +622,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                         GameSDKLog.Debug($"CPU or GPU Boost mode is active and CPU({cpuLevel})/GPU({gpuLevel}) level change request was not approved.");
                     }
 
-                    m_Data.PerformanceLevelControlAvailable = false;
-                    m_Data.ChangeFlags |= Feature.PerformanceLevelControl;
-                    m_PerformanceLevelControlSystemChange = true;
+                    EnableSystemControl();
                 }
             }
             return success;
@@ -615,9 +641,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 
                 if (result)
                 {
-                    m_Data.PerformanceLevelControlAvailable = false;
-                    m_Data.ChangeFlags |= Feature.PerformanceLevelControl;
-                    m_PerformanceLevelControlSystemChange = true;
+                    EnableSystemControl();
                 }
             }
             return result;
@@ -636,9 +660,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 
                 if (result)
                 {
-                    m_Data.PerformanceLevelControlAvailable = false;
-                    m_Data.ChangeFlags |= Feature.PerformanceLevelControl;
-                    m_PerformanceLevelControlSystemChange = true;
+                    EnableSystemControl();
                 }
             }
             return result;
@@ -652,12 +674,22 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             if (!m_Api.Initialize())
                 GameSDKLog.Debug("Resume: reinitialization failed!");
 
-            lock (m_DataLock)
+            if ((Capabilities & Feature.CpuPerformanceLevel) == Feature.CpuPerformanceLevel)
             {
-                m_Data.CpuPerformanceLevel = Constants.UnknownPerformanceLevel;
-                m_Data.GpuPerformanceLevel = Constants.UnknownPerformanceLevel;
-                m_Data.ChangeFlags |= Feature.CpuPerformanceLevel;
-                m_Data.ChangeFlags |= Feature.GpuPerformanceLevel;
+                lock (m_DataLock)
+                {
+                    m_Data.CpuPerformanceLevel = Constants.UnknownPerformanceLevel;
+                    m_Data.ChangeFlags |= Feature.CpuPerformanceLevel;
+                }
+            }
+
+            if ((Capabilities & Feature.GpuPerformanceLevel) == Feature.GpuPerformanceLevel)
+            {
+                lock (m_DataLock)
+                {
+                    m_Data.GpuPerformanceLevel = Constants.UnknownPerformanceLevel;
+                    m_Data.ChangeFlags |= Feature.GpuPerformanceLevel;
+                }
             }
 
             ImmediateUpdateTemperature();
@@ -665,6 +697,26 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             CheckAndInitializeVRR();
 
             (VariableRefreshRate.Instance as VRRManager)?.Resume();
+        }
+
+        void EnableSystemControl()
+        {
+            if (!m_AllowPerformanceLevelControlChanges)
+                return;
+
+            m_Data.PerformanceLevelControlAvailable = false;
+            m_Data.ChangeFlags |= Feature.PerformanceLevelControl;
+            m_PerformanceLevelControlSystemChange = true;
+        }
+
+        void DisableSystemControl()
+        {
+            if (!m_AllowPerformanceLevelControlChanges)
+                return;
+
+            m_Data.PerformanceLevelControlAvailable = true;
+            m_Data.ChangeFlags |= Feature.PerformanceLevelControl;
+            m_PerformanceLevelControlSystemChange = false;
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -794,6 +846,14 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 
                     if (s_isAvailable)
                     {
+                        if (!IsAPVersionSupported())
+                        {
+                            GameSDKLog.Debug($"GameSDK is the wrong version. Aborting Adaptive Performance Samsung Android initialization.");
+                            s_isAvailable = false;
+                            s_GameSDK = null;
+                            return;
+                        }
+
                         s_GameSDKRawObjectID = s_GameSDK.GetRawObject();
                         var classID = s_GameSDK.GetRawClass();
 
@@ -846,6 +906,23 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 
                 if (!success)
                     GameSDKLog.Debug("setListener(null) failed!");
+            }
+
+            static public bool IsAPVersionSupported()
+            {
+                try
+                {
+                    Version initVersion;
+                    if (TryParseVersion(s_GameSDK.Call<string>("getVersion"), out initVersion))
+                        return initVersion >= new Version(3, 2);
+                    else
+                        return false;
+                }
+                catch (Exception)
+                {
+                    GameSDKLog.Debug("[Exception] IsAPVersionSupported() failed!");
+                }
+                return false;
             }
 
             public bool Initialize()
@@ -1019,7 +1096,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
 
             public int GetMaxCpuPerformanceLevel()
             {
-                int maxCpuPerformanceLevel = -1;
+                int maxCpuPerformanceLevel = Constants.UnknownPerformanceLevel;
                 try
                 {
                     maxCpuPerformanceLevel = s_GameSDK.Call<int>("getCPULevelMax");
@@ -1028,22 +1105,20 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 {
                     GameSDKLog.Debug("[Exception] GameSDK.getCPULevelMax() failed!");
                 }
-
                 return maxCpuPerformanceLevel;
             }
 
             public int GetMaxGpuPerformanceLevel()
             {
-                int maxGpuPerformanceLevel = -1;
+                int maxGpuPerformanceLevel = Constants.UnknownPerformanceLevel;
                 try
                 {
                     maxGpuPerformanceLevel = s_GameSDK.Call<int>("getGPULevelMax");
                 }
                 catch (Exception)
                 {
-                    GameSDKLog.Debug("[Exception] GameSDK.getCPULevelMax() failed!");
+                    GameSDKLog.Debug("[Exception] GameSDK.getGPULevelMax() failed!");
                 }
-
                 return maxGpuPerformanceLevel;
             }
 

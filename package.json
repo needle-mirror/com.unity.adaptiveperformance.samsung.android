@@ -4,7 +4,7 @@
   "description": "The Adaptive Performance Samsung (Android) provider is a subsystem for Adaptive Performance to extend Adaptive Performance to Samsung Android devices. It transmits device-specific information to the Adaptive Performance system and enables you to receive data about the thermal state of a Samsung Android device. \n\nBy installing this package, you agree to the terms and conditions of the Samsung GameSDK End User License Agreement found under \"View licenses\" above.",
   "unity": "2021.2",
   "unityRelease": "0a18",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "keywords": [
     "mobile",
     "adaptive",
@@ -26,14 +26,17 @@
     "clusterinfo"
   ],
   "dependencies": {
-    "com.unity.adaptiveperformance": "4.0.0"
+    "com.unity.adaptiveperformance": "4.0.1"
+  },
+  "_upm": {
+    "changelog": "### Added\n- Fix bug where Adaptive Performance Samsung Provider is not deinitialized properly after not being successfully initialized due to lack of Samsung GameSDK.\n\n### Changed\n- Improved handling for GameSDK APIs that may not be available on certain devices."
   },
   "upmCi": {
-    "footprint": "3da42e92b9ce6016b2877006c5c3f678caef44d3"
+    "footprint": "b0548b9113f439f11d984fdf51801c552de8cd79"
   },
   "repository": {
     "url": "https://github.cds.internal.unity3d.com/unity/com.unity.adaptiveperformance.samsung.android.git",
     "type": "git",
-    "revision": "4a3699a09f394370bc95f50b59dcbc54465b6cdd"
+    "revision": "5630c0d452ba102d547225ebed8d7fb30050fa96"
   }
 }

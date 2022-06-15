@@ -22,7 +22,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
         static List<AdaptivePerformanceSubsystemDescriptor> s_SamsungGameSDKSubsystemDescriptors =
             new List<AdaptivePerformanceSubsystemDescriptor>();
 
-        #if UNITY_ANDROID
+#if UNITY_ANDROID
         /// <summary>Returns the currently active Samsung Android Subsystem instance, if an instance exists.</summary>
         public SamsungGameSDKAdaptivePerformanceSubsystem samsungGameSDKSubsystem
         {
