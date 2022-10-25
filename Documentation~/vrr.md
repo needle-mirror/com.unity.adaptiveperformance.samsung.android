@@ -10,27 +10,18 @@ If the current refresh rate or the list of supported refresh rate changes becaus
 
 The Unity core API `Screent.currentResolution.refreshRate` is automatically updated when the refresh rate changes. This update might not happen immediately, so it is not recommended to cache the value of `Screent.currentResolution.refreshRate` in your application.
 
-## Technical details
+## Device compatibility
 
-### Unity Support
-
-This version of VRR is compatible with Unity Editor versions 2021.2 and later.
-
-### Device Support
-
-Variable Refresh Rate is currently only supported on following devices:
-
-- Galaxy S20 & S21 with GameSDK 3.2+ (April 2020 update).
-- Galaxy Note 20 with GameSDK 3.2+ (April 2020 update).
+For information on which devices that support Variable Refresh Rate supports, see [Requirements and compatibility](requirements.md#variable-refresh-rate).
 
 ## Project Settings
 
-To enable proper timing for Adaptive Performance, you need to enable the **Frame Timing Stats** option (menu: **Edit &gt; Project Settings &gt; Player &gt; Other Settings**).
+To enable proper timing for Adaptive Performance, you need to enable the **Frame Timing Stats** option (menu: **Edit** &gt; **Project Settings** &gt; **Player** &gt; **Other Settings**).
 
-If you want to use `Application.targetFrameRate` to limit the target frame rate, set the **VSync Count** option under **Edit &gt; Project Settings &gt; Quality &gt; Other** to **Don't Sync**.
+If you want to use `Application.targetFrameRate` to limit the target frame rate, set the **VSync Count** option under **Edit** &gt; **Project Settings** &gt; **Quality** &gt; **Other** to **Don't Sync**.
 
-Unity has several quality levels in the quality settings. We recommend to switch the **VSync Count** to **Don't Sync** for each quality level. This will avoid issues with Adaptive Performance features like Adaptive Framerate and limiting the target framerate with `Application.targetFrameRate`.
+Unity has several quality levels in the quality settings. It's best practice to switch the **VSync Count** to **Don't Sync** for each quality level. This avoids issues with Adaptive Performance features like Adaptive Framerate and limiting the target framerate with `Application.targetFrameRate`.
 
 ### Optimized Frame Pacing
 
-Adapitve Performance and Variable Refresh Rate is not compatible with framce pacing and we recommend to dissable **Optimized Frame Pacing** under **Edit &gt; Project Settings &gt; Player &gt; Resolution and Presentation**.
+Adaptive Performance and Variable Refresh Rate are not compatible with frame pacing and it's best practice to disable **Optimized Frame Pacing** under **Edit** &gt; **Project Settings** &gt; **Player** &gt; **Resolution and Presentation**.

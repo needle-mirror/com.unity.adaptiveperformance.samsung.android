@@ -22,6 +22,36 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
         static List<AdaptivePerformanceSubsystemDescriptor> s_SamsungGameSDKSubsystemDescriptors =
             new List<AdaptivePerformanceSubsystemDescriptor>();
 
+        /// <summary>
+        /// Returns if the provider loader was initialized successfully.
+        /// </summary>
+        public override bool Initialized
+        {
+            get
+            {
+#if UNITY_ANDROID
+                return samsungGameSDKSubsystem != null;
+#else
+                return false;
+#endif
+            }
+        }
+
+        /// <summary>
+        /// Returns if the provider loader is currently running.
+        /// </summary>
+        public override bool Running
+        {
+            get
+            {
+#if UNITY_ANDROID
+                return samsungGameSDKSubsystem != null && samsungGameSDKSubsystem.running;
+#else
+                return false;
+#endif
+            }
+        }
+
 #if UNITY_ANDROID
         /// <summary>Returns the currently active Samsung Android Subsystem instance, if an instance exists.</summary>
         public SamsungGameSDKAdaptivePerformanceSubsystem samsungGameSDKSubsystem
@@ -98,7 +128,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
         {
 #if UNITY_ANDROID
             DestroySubsystem<SamsungGameSDKAdaptivePerformanceSubsystem>();
-            return true;
+            return base.Deinitialize();
 #else
             return false;
 #endif
