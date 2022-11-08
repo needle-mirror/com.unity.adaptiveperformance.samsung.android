@@ -356,66 +356,80 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             return true;
         }
 
-        public override void Start()
+        internal bool Initialize()
         {
-            if (m_Api.Initialize())
-            {
-                if (TryParseVersion(m_Api.GetVersion(), out m_Version))
-                {
-                    if (m_Version >= new Version(3, 5))
-                    {
-                        initialized = true;
-                        MaxCpuPerformanceLevel = m_Api.GetMaxCpuPerformanceLevel();
-                        MaxGpuPerformanceLevel = m_Api.GetMaxGpuPerformanceLevel();
-                        Capabilities |= Feature.CpuPerformanceBoost | Feature.GpuPerformanceBoost;
-                    }
-                    else if (m_Version >= new Version(3, 4))
-                    {
-                        initialized = true;
-                        MaxCpuPerformanceLevel = m_Api.GetMaxCpuPerformanceLevel();
-                        MaxGpuPerformanceLevel = m_Api.GetMaxGpuPerformanceLevel();
-                    }
-                    else if (m_Version >= new Version(3, 2))
-                    {
-                        initialized = true;
-                        MaxCpuPerformanceLevel = m_Api.GetMaxCpuPerformanceLevel();
-                        MaxGpuPerformanceLevel = m_Api.GetMaxGpuPerformanceLevel();
-                    }
-                    else
-                    {
-                        m_Api.Terminate();
-                        initialized = false;
-                    }
-                }
-
-                if (MaxCpuPerformanceLevel == k_InvalidOperation)
-                {
-                    MaxCpuPerformanceLevel = Constants.UnknownPerformanceLevel;
-                    Capabilities &= ~Feature.CpuPerformanceLevel;
-
-                    m_AllowPerformanceLevelControlChanges = false;
-                }
-
-                if (MaxGpuPerformanceLevel == k_InvalidOperation)
-                {
-                    MaxGpuPerformanceLevel = Constants.UnknownPerformanceLevel;
-                    Capabilities &= ~Feature.GpuPerformanceLevel;
-
-                    m_AllowPerformanceLevelControlChanges = false;
-                }
-
-                m_Data.PerformanceLevelControlAvailable = m_AllowPerformanceLevelControlChanges;
-            }
-
             if (initialized)
             {
-                ImmediateUpdateTemperature();
-
-                Thread t = new Thread(CheckInitialTemperatureAndSendWarnings);
-                t.Start();
-
-                CheckAndInitializeVRR();
+                return true;
             }
+
+            if (!m_Api.Initialize())
+            {
+                return false;
+            }
+
+            if (TryParseVersion(m_Api.GetVersion(), out m_Version))
+            {
+                if (m_Version >= new Version(3, 5))
+                {
+                    initialized = true;
+                    MaxCpuPerformanceLevel = m_Api.GetMaxCpuPerformanceLevel();
+                    MaxGpuPerformanceLevel = m_Api.GetMaxGpuPerformanceLevel();
+                    Capabilities |= Feature.CpuPerformanceBoost | Feature.GpuPerformanceBoost;
+                }
+                else if (m_Version >= new Version(3, 4))
+                {
+                    initialized = true;
+                    MaxCpuPerformanceLevel = m_Api.GetMaxCpuPerformanceLevel();
+                    MaxGpuPerformanceLevel = m_Api.GetMaxGpuPerformanceLevel();
+                }
+                else if (m_Version >= new Version(3, 2))
+                {
+                    initialized = true;
+                    MaxCpuPerformanceLevel = m_Api.GetMaxCpuPerformanceLevel();
+                    MaxGpuPerformanceLevel = m_Api.GetMaxGpuPerformanceLevel();
+                }
+                else
+                {
+                    m_Api.Terminate();
+                    initialized = false;
+                }
+            }
+
+            if (MaxCpuPerformanceLevel == k_InvalidOperation)
+            {
+                MaxCpuPerformanceLevel = Constants.UnknownPerformanceLevel;
+                Capabilities &= ~Feature.CpuPerformanceLevel;
+
+                m_AllowPerformanceLevelControlChanges = false;
+            }
+
+            if (MaxGpuPerformanceLevel == k_InvalidOperation)
+            {
+                MaxGpuPerformanceLevel = Constants.UnknownPerformanceLevel;
+                Capabilities &= ~Feature.GpuPerformanceLevel;
+
+                m_AllowPerformanceLevelControlChanges = false;
+            }
+
+            m_Data.PerformanceLevelControlAvailable = m_AllowPerformanceLevelControlChanges;
+
+            return initialized;
+        }
+
+        public override void Start()
+        {
+            if (!initialized)
+            {
+                return;
+            }
+
+            ImmediateUpdateTemperature();
+
+            Thread t = new Thread(CheckInitialTemperatureAndSendWarnings);
+            t.Start();
+
+            CheckAndInitializeVRR();
         }
 
         void CheckAndInitializeVRR()
