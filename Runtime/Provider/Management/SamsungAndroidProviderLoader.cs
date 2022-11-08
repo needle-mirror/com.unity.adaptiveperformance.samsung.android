@@ -59,10 +59,20 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
             CreateSubsystem<AdaptivePerformanceSubsystemDescriptor, SamsungGameSDKAdaptivePerformanceSubsystem>(s_SamsungGameSDKSubsystemDescriptors, "SamsungGameSDK");
             if (samsungGameSDKSubsystem == null)
             {
-                Debug.LogError("Unable to start the Samsung Android subsystem.");
+                Debug.LogError("Unable to create the Samsung Android subsystem.");
+                return false;
             }
 
-            return samsungGameSDKSubsystem != null;
+            if (!samsungGameSDKSubsystem.initialized)
+            {
+                if (!samsungGameSDKSubsystem.Initialize())
+                {
+                    Debug.LogError("Unable to initialize the Samsung Android subsystem.");
+                    return false;
+                }
+            }
+
+            return samsungGameSDKSubsystem != null && samsungGameSDKSubsystem.initialized;
 #else
             return false;
 #endif
