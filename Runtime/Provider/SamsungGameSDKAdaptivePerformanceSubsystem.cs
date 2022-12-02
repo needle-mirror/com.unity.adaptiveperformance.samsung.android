@@ -375,66 +375,92 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
                 return true;
             }
 
+            protected override bool TryInitialize()
+            {
+                if (Initialized)
+                {
+                    return true;
+                }
+
+                if (!base.TryInitialize())
+                {
+                    return false;
+                }
+
+                if (!m_Api.Initialize())
+                {
+                    return false;
+                }
+
+                if (TryParseVersion(m_Api.GetVersion(), out m_Version))
+                {
+                    if (m_Version >= new Version(3, 5))
+                    {
+                        Initialized = true;
+                        MaxCpuPerformanceLevel = m_Api.GetMaxCpuPerformanceLevel();
+                        MaxGpuPerformanceLevel = m_Api.GetMaxGpuPerformanceLevel();
+                        Capabilities |= Feature.CpuPerformanceBoost | Feature.GpuPerformanceBoost;
+                    }
+                    else if (m_Version >= new Version(3, 4))
+                    {
+                        Initialized = true;
+                        MaxCpuPerformanceLevel = m_Api.GetMaxCpuPerformanceLevel();
+                        MaxGpuPerformanceLevel = m_Api.GetMaxGpuPerformanceLevel();
+                    }
+                    else if (m_Version >= new Version(3, 2))
+                    {
+                        Initialized = true;
+                        MaxCpuPerformanceLevel = m_Api.GetMaxCpuPerformanceLevel();
+                        MaxGpuPerformanceLevel = m_Api.GetMaxGpuPerformanceLevel();
+                    }
+                    else
+                    {
+                        m_Api.Terminate();
+                        Initialized = false;
+                    }
+                }
+
+                if (MaxCpuPerformanceLevel == SamsungAndroidProviderConstants.k_InvalidOperation)
+                {
+                    MaxCpuPerformanceLevel = Constants.UnknownPerformanceLevel;
+                    Capabilities &= ~Feature.CpuPerformanceLevel;
+
+                    m_AllowPerformanceLevelControlChanges = false;
+                }
+
+                if (MaxGpuPerformanceLevel == SamsungAndroidProviderConstants.k_InvalidOperation)
+                {
+                    MaxGpuPerformanceLevel = Constants.UnknownPerformanceLevel;
+                    Capabilities &= ~Feature.GpuPerformanceLevel;
+
+                    m_AllowPerformanceLevelControlChanges = false;
+                }
+
+                m_Data.PerformanceLevelControlAvailable = m_AllowPerformanceLevelControlChanges;
+
+                return Initialized;
+            }
+
             public override void Start()
             {
-                if (m_Api.Initialize())
+                if (!Initialized)
                 {
-                    if (TryParseVersion(m_Api.GetVersion(), out m_Version))
-                    {
-                        if (m_Version >= new Version(3, 5))
-                        {
-                            m_Running = true;
-                            MaxCpuPerformanceLevel = m_Api.GetMaxCpuPerformanceLevel();
-                            MaxGpuPerformanceLevel = m_Api.GetMaxGpuPerformanceLevel();
-                            Capabilities |= Feature.CpuPerformanceBoost | Feature.GpuPerformanceBoost;
-                        }
-                        else if (m_Version >= new Version(3, 4))
-                        {
-                            m_Running = true;
-                            MaxCpuPerformanceLevel = m_Api.GetMaxCpuPerformanceLevel();
-                            MaxGpuPerformanceLevel = m_Api.GetMaxGpuPerformanceLevel();
-                        }
-                        else if (m_Version >= new Version(3, 2))
-                        {
-                            m_Running = true;
-                            MaxCpuPerformanceLevel = m_Api.GetMaxCpuPerformanceLevel();
-                            MaxGpuPerformanceLevel = m_Api.GetMaxGpuPerformanceLevel();
-                        }
-                        else
-                        {
-                            m_Api.Terminate();
-                            m_Running = false;
-                        }
-                    }
-
-                    if (MaxCpuPerformanceLevel == SamsungAndroidProviderConstants.k_InvalidOperation)
-                    {
-                        MaxCpuPerformanceLevel = Constants.UnknownPerformanceLevel;
-                        Capabilities &= ~Feature.CpuPerformanceLevel;
-
-                        m_AllowPerformanceLevelControlChanges = false;
-                    }
-
-                    if (MaxGpuPerformanceLevel == SamsungAndroidProviderConstants.k_InvalidOperation)
-                    {
-                        MaxGpuPerformanceLevel = Constants.UnknownPerformanceLevel;
-                        Capabilities &= ~Feature.GpuPerformanceLevel;
-
-                        m_AllowPerformanceLevelControlChanges = false;
-                    }
-
-                    m_Data.PerformanceLevelControlAvailable = m_AllowPerformanceLevelControlChanges;
+                    return;
                 }
 
                 if (m_Running)
                 {
-                    ImmediateUpdateTemperature();
-
-                    Thread t = new Thread(CheckInitialTemperatureAndSendWarnings);
-                    t.Start();
-
-                    CheckAndInitializeVRR();
+                    return;
                 }
+
+                ImmediateUpdateTemperature();
+
+                Thread t = new Thread(CheckInitialTemperatureAndSendWarnings);
+                t.Start();
+
+                CheckAndInitializeVRR();
+
+                m_Running = true;
             }
 
             void CheckAndInitializeVRR()

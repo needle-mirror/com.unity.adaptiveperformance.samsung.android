@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 * Samsung provider was changed to support the new APIs.
 * Improved handling for GameSDK APIs that may not be available on certain devices.
 
+### Fixed
+- Adjusted the loader and subsystem initialization process to allow for falling back to another subsystem if init is not successful.
+
 ## [4.0.1] - 2022-05-02
 
 ### Added
