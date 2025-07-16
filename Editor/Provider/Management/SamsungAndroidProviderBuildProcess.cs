@@ -29,10 +29,10 @@ namespace UnityEditor.AdaptivePerformance.Samsung.Android.Editor
     /// asset after launch needs to be handled in the Samsung Android provider build process.
     ///
     /// For more information about the APIs used, see:
-    /// * <see href="https://docs.unity3d.com/ScriptReference/EditorBuildSettings.html">EditorBuildSettings</see>
-    /// * <see href="https://docs.unity3d.com/ScriptReference/PlayerSettings.GetPreloadedAssets.html">PlayerSettings.GetPreloadedAssets</see>
-    /// * <see href="https://docs.unity3d.com/ScriptReference/PlayerSettings.SetPreloadedAssets.html">PlayerSettings.SetPreloadedAssets</see>
-    /// * <see href="https://docs.unity3d.com/ScriptReference/Android.IPostGenerateGradleAndroidProject.html">IPostGenerateGradleAndroidProject</see>
+    /// * <a href="https://docs.unity3d.com/ScriptReference/EditorBuildSettings.html">EditorBuildSettings</a>
+    /// * <a href="https://docs.unity3d.com/ScriptReference/PlayerSettings.GetPreloadedAssets.html">PlayerSettings.GetPreloadedAssets</a>
+    /// * <a href="https://docs.unity3d.com/ScriptReference/PlayerSettings.SetPreloadedAssets.html">PlayerSettings.SetPreloadedAssets</a>
+    /// * <a href="https://docs.unity3d.com/ScriptReference/Android.IPostGenerateGradleAndroidProject.html">IPostGenerateGradleAndroidProject</a>
     /// </summary>
     public class SamsungAndroidProviderBuildProcess : IPreprocessBuildWithReport, IPostprocessBuildWithReport, IPostGenerateGradleAndroidProject
     {
@@ -94,7 +94,9 @@ namespace UnityEditor.AdaptivePerformance.Samsung.Android.Editor
             }
         }
 
-        /// <summary>Override of <see cref="IPostprocessBuildWithReport"/></summary>.
+        /// <summary>
+        /// Override of <see cref="IPostprocessBuildWithReport"/>.
+        /// </summary>
         /// <param name="report">Build report.</param>
         public void OnPostprocessBuild(BuildReport report)
         {
@@ -106,7 +108,7 @@ namespace UnityEditor.AdaptivePerformance.Samsung.Android.Editor
         /// <summary>
         /// Implementation of <see cref="IPostGenerateGradleAndroidProject"/>
         /// </summary>
-        /// <param name="path"></param>
+        /// <param name="path">Path of gradle file.</param>
         public void OnPostGenerateGradleAndroidProject(string path)
         {
             var setting = AdaptivePerformanceBuildUtils.GetWantedStartupBoostSetting(SamsungAndroidProviderSettings.GetSettings());

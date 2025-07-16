@@ -23,7 +23,7 @@ namespace UnityEngine.AdaptivePerformance.Samsung.Android
         /// <summary>
         /// Change the current display refresh rate to the value referenced by the given index from the list of supported refresh rates.
         /// </summary>
-        /// <param name="index"></param>
+        /// <param name="index">Index of refreshrate field.</param>
         /// <returns>True if the display refresh rate was updated successfully, false otherwise. Returns false if the requested refresh rate is larger than the `Application.targetFrameRate`. **Note:** There is a delay before the actual refresh rate and the value of `Screen.currentResolution.refreshRate` are updated.</returns>
         bool SetRefreshRateByIndex(int index);
 

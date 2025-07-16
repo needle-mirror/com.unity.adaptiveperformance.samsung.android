@@ -1,4 +1,6 @@
 # Adaptive Performance Samsung (Android) provider
+> [!NOTE]
+> The Adaptive Performance Samsung (Android) repository is deprecated. Use the [Adaptive Performance Android Provider](https://docs.unity3d.com/Packages/com.unity.adaptiveperformance.google.android@latest?subfolder=/manual/index.html) instead.
 
 The Adaptive Performance Samsung (Android) provider extends [Adaptive Performance](https://docs.unity3d.com/Packages/com.unity.adaptiveperformance@latest/index.html) to Samsung Android devices. To do this, it sends device-specific information from Samsung Android devices to the Adaptive Performance package. This enables you to retrieve data about the thermal state of Samsung Android devices.
 

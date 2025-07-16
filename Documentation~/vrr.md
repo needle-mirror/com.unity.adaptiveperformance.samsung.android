@@ -8,7 +8,7 @@ The Variable Refresh Rate API is supported on all devices where `UnityEngine.Ada
 
 If the current refresh rate or the list of supported refresh rate changes because of an external event, the `IVariableRefreshRate.RefreshRateChanged` event is triggered. This can happen when a user is making changes to the Display Settings.
 
-The Unity core API `Screent.currentResolution.refreshRate` is automatically updated when the refresh rate changes. This update might not happen immediately, so it is not recommended to cache the value of `Screent.currentResolution.refreshRate` in your application.
+The Unity core API `Screen.currentResolution.refreshRate` is automatically updated when the refresh rate changes. This update might not happen immediately, so it is not recommended to cache the value of `Screent.currentResolution.refreshRate` in your application.
 
 ## Device compatibility
 
